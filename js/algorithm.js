@@ -1,18 +1,16 @@
 // ============================================================
-// CalD Risk Screen — Calcium & Vitamin D Absorption Risk Algorithm (CARDA v1.0)
+// CalD Risk Screen — Calcium & Vitamin D Absorption Risk Algorithm (CARDA v1.1)
 // Motor de cálculo determinista: distribución en semana virtual,
-// fórmula de absorción fisiológica de calcio, índice de exposición
-// solar (proxy de vitamina D), riesgo óseo compuesto y tamizaje
-// de sarcopenia (SARC-F).
+// absorción fisiológica de calcio (según tipo de suplemento), índice
+// de exposición solar (con fototipo), adecuación dietética de vitamina
+// D, riesgo óseo compuesto, y tamizaje de sarcopenia (SARC-F).
 //
-// Adaptado de la arquitectura de B12 Risk Screen (BREA v3.0) del
-// mismo autor. © Jean Carlos Ruiz Mosley. Todos los derechos reservados.
+// Adaptado de la arquitectura de B12 Risk Screen (BREA v3.0) del mismo
+// autor. © Jean Carlos Ruiz Mosley. Todos los derechos reservados.
 // ============================================================
 
 // ------------------------------------------------------------
-// 1. DISTRIBUCIÓN DE LA SEMANA VIRTUAL (genérica, reutilizada del
-//    motor de B12: reparte cada alimento en los días/comidas de
-//    menor carga acumulada para nivelar el consumo)
+// 1. DISTRIBUCIÓN DE LA SEMANA VIRTUAL (genérica)
 // ------------------------------------------------------------
 const distanciaCircular = (a, b) => {
     const d = Math.abs(a - b);
@@ -20,9 +18,8 @@ const distanciaCircular = (a, b) => {
 };
 
 const asignarDiasDeSemana = (alimentosConContribucion) => {
-    // alimentosConContribucion: [{ id, diasPorSemana, contribucionEstimadaPorDia }, ...]
-    const cargaPorDia = Array(7).fill(0); // mg de calcio estimados acumulados por día
-    const asignaciones = {}; // id -> [diaIdx, ...]
+    const cargaPorDia = Array(7).fill(0);
+    const asignaciones = {};
 
     const ordenados = [...alimentosConContribucion].sort(
         (a, b) => b.contribucionEstimadaPorDia - a.contribucionEstimadaPorDia
@@ -51,8 +48,7 @@ const asignarDiasDeSemana = (alimentosConContribucion) => {
 };
 
 const asignarComidasDelDia = (foodsDelDia) => {
-    // foodsDelDia: [{ id, vecesPorDia }, ...]
-    const carga = [0, 0, 0]; // conteo de alimentos ya colocados por comida (0,1,2)
+    const carga = [0, 0, 0];
     const asignaciones = {};
 
     const ordenados = [...foodsDelDia].sort((a, b) => b.vecesPorDia - a.vecesPorDia);
@@ -82,16 +78,17 @@ const asignarComidasDelDia = (foodsDelDia) => {
 // ------------------------------------------------------------
 // 2. ABSORCIÓN FISIOLÓGICA DE CALCIO POR DOSIS (saturable)
 // ------------------------------------------------------------
-// Modelo simplificado basado en la evidencia de biodisponibilidad de
-// calcio (Heaney et al.): la fracción absorbida por transporte activo
-// (vitamina D-dependiente) se satura cerca de 500 mg por toma; el
-// excedente se absorbe solo por difusión paracelular pasiva, con menor
-// eficiencia. Esta es la base fisiológica de la recomendación de
-// fraccionar el calcio (dieta + suplemento) en varias tomas al día.
-const calcularAbsorcionCalcio = (ingerido) => {
+// Basado en la evidencia de biodisponibilidad de calcio (NIH ODS;
+// Heaney et al.): la fracción absorbida por transporte activo se
+// satura cerca de 500 mg por toma; el excedente se absorbe solo por
+// difusión paracelular pasiva. "factorTipo" ajusta la eficiencia activa
+// según el tipo de sal usada en el suplemento (ver TIPOS_SUPLEMENTO_CALCIO
+// en data.js): el citrato de calcio se absorbe ~20-27% mejor que el
+// carbonato (Sakhaee et al. 1999; Heller et al. 2000).
+const calcularAbsorcionCalcio = (ingerido, factorTipo = 1.0) => {
     if (ingerido <= 0) return 0;
 
-    const activo = Math.min(ingerido, ABSORCION_MAXIMA_ACTIVA_POR_DOSIS) * EFICIENCIA_ABSORCION_ACTIVA;
+    const activo = Math.min(ingerido, ABSORCION_MAXIMA_ACTIVA_POR_DOSIS) * EFICIENCIA_ABSORCION_ACTIVA * factorTipo;
     const pasivo = ingerido > ABSORCION_MAXIMA_ACTIVA_POR_DOSIS
         ? (ingerido - ABSORCION_MAXIMA_ACTIVA_POR_DOSIS) * EFICIENCIA_ABSORCION_PASIVA
         : 0;
@@ -102,22 +99,23 @@ const calcularAbsorcionCalcio = (ingerido) => {
 // ------------------------------------------------------------
 // 3. MOTOR PRINCIPAL — SEMANA VIRTUAL DE CALCIO
 // ------------------------------------------------------------
-const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManual = {}) => {
-    // overridesManual: { [foodId]: { [occurrenceIndex]: { dia, comida } } }
+// suplemento: { mgPorDia, vecesPorDia, diasPorSemana, tipoId } | null
+const ejecutarSemanaVirtualCalcio = (alimentos, suplemento, overridesManual = {}) => {
     let semanaVirtual = Array(7).fill(null).map(() =>
         Array(3).fill(null).map(() => ({
             alimentos: [],
-            totalIngerido: 0,
+            totalIngerido: 0,       // suma simple de mg (para mostrar al usuario)
+            totalEfectivo: 0,       // suma ponderada por factorTipo (para el cálculo de absorción)
             totalAbsorbido: 0,
             suplementoAgregado: null
         }))
     );
 
-    // 3.1 Determinar en qué días participa cada alimento, balanceando la carga
+    // 3.1 Determinar en qué días participa cada alimento
     const alimentosConDatos = alimentos
         .map(alimento => {
             const { diasPorSemana, vecesPorDia, porcionesPorComida, calcioPorcion } = alimento;
-            if (diasPorSemana === 0 || vecesPorDia === 0 || porcionesPorComida === 0) return null;
+            if (diasPorSemana === 0 || vecesPorDia === 0 || porcionesPorComida === 0 || !calcioPorcion) return null;
 
             const contribucionEstimadaPorDia = calcioPorcion * porcionesPorComida * vecesPorDia;
             return { ...alimento, contribucionEstimadaPorDia };
@@ -137,7 +135,7 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
         diasAsignados: diasAsignadosPorAlimento[alimento.id] || []
     }));
 
-    // 3.2 Para cada día, repartir dinámicamente las comidas entre los alimentos activos
+    // 3.2 Para cada día, repartir dinámicamente las comidas
     const colocacionesAutomaticas = [];
     const contadorPorAlimento = {};
 
@@ -173,7 +171,7 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
             });
     }
 
-    // 3.3 Aplicar overrides manuales del usuario (drag & drop / tocar-y-tocar)
+    // 3.3 Aplicar overrides manuales del usuario
     colocacionesAutomaticas.forEach(colocacion => {
         const override = overridesManual?.[colocacion.id]?.[colocacion.occurrenceIndex];
         const diaFinal = override ? override.dia : colocacion.diaAuto;
@@ -191,28 +189,34 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
             comidaAuto: colocacion.comidaAuto
         });
         semanaVirtual[diaFinal][comidaFinal].totalIngerido += colocacion.calcioIngerido;
+        semanaVirtual[diaFinal][comidaFinal].totalEfectivo += colocacion.calcioIngerido; // factorTipo=1 para alimentos
     });
 
-    // 3.4 Distribuir el suplemento de calcio (si aplica), buscando siempre la comida
-    //     con menor carga dietética ese día para maximizar la eficiencia de absorción
-    if (regimenSuplemento && regimenSuplemento.dosis > 0) {
-        const { dosis, vecesPorDia, diasPorSemana } = regimenSuplemento;
+    // 3.4 Distribuir el suplemento de calcio (si aplica)
+    if (suplemento && suplemento.mgPorDia > 0 && suplemento.diasPorSemana > 0) {
+        const { mgPorDia, vecesPorDia, diasPorSemana, tipoId } = suplemento;
+        const tipoInfo = (typeof TIPOS_SUPLEMENTO_CALCIO !== 'undefined'
+            ? TIPOS_SUPLEMENTO_CALCIO.find(t => t.id === tipoId)
+            : null) || { factorAbsorcion: 1.0 };
+        const dosisPorToma = mgPorDia / Math.max(vecesPorDia, 1);
+
         const diasConSuplemento = diasPorSemana >= 7
             ? [0, 1, 2, 3, 4, 5, 6]
-            : asignarDiasDeSemana([{ id: 'supl', diasPorSemana, contribucionEstimadaPorDia: dosis }])['supl'] || [];
+            : (asignarDiasDeSemana([{ id: 'supl', diasPorSemana, contribucionEstimadaPorDia: mgPorDia }])['supl'] || []);
 
         diasConSuplemento.forEach(d => {
             const comidasOrdenadas = [0, 1, 2].map(c => ({
                 index: c,
-                calcioAlimentos: semanaVirtual[d][c].totalIngerido
-            })).sort((a, b) => a.calcioAlimentos - b.calcioAlimentos);
+                cargaActual: semanaVirtual[d][c].totalIngerido
+            })).sort((a, b) => a.cargaActual - b.cargaActual);
 
             for (let i = 0; i < vecesPorDia && i < 3; i++) {
                 const comidaDestino = comidasOrdenadas[i].index;
-                semanaVirtual[d][comidaDestino].totalIngerido += dosis;
+                semanaVirtual[d][comidaDestino].totalIngerido += dosisPorToma;
+                semanaVirtual[d][comidaDestino].totalEfectivo += dosisPorToma * tipoInfo.factorAbsorcion;
                 semanaVirtual[d][comidaDestino].suplementoAgregado = {
-                    dosis: dosis,
-                    etiqueta: `${dosis} mg`
+                    dosis: Math.round(dosisPorToma),
+                    etiqueta: `${Math.round(dosisPorToma)} mg`
                 };
             }
         });
@@ -228,7 +232,9 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
         let ingeridoDia = 0;
 
         const comidasDetalle = dia.map((comida, comidaIdx) => {
-            const absorbidoComida = calcularAbsorcionCalcio(comida.totalIngerido);
+            // El "efectivo" ya incorpora el factor de mejor/peor absorción del
+            // tipo de suplemento; se le aplica igual la curva de saturación.
+            const absorbidoComida = calcularAbsorcionCalcio(comida.totalEfectivo, 1.0);
             dia[comidaIdx].totalAbsorbido = absorbidoComida;
             absorbidoDia += absorbidoComida;
             ingeridoDia += comida.totalIngerido;
@@ -244,11 +250,7 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
 
         const cumpleMeta = absorbidoDia >= META_ABSORCION_DIARIA_MG;
 
-        if (cumpleMeta) {
-            diasCumplidosCount++;
-        } else {
-            diasNoCumplidosCount++;
-        }
+        if (cumpleMeta) diasCumplidosCount++; else diasNoCumplidosCount++;
 
         reporteDias.push({
             diaNombreKey: DIAS_SEMANA[diaIdx].nameKey,
@@ -276,18 +278,20 @@ const ejecutarSemanaVirtualCalcio = (alimentos, regimenSuplemento, overridesManu
 // ------------------------------------------------------------
 // 4. ÍNDICE DE EXPOSICIÓN SOLAR (proxy de síntesis de vitamina D)
 // ------------------------------------------------------------
-// No mide 25-OH-D sérica; es una estimación indirecta de "carga de
-// síntesis cutánea semanal" a partir de hábitos declarados de exposición.
-const calcularIndiceExposicionSolar = ({ diasPorSemana, minutosPorSesion, horario, usaProtector, edadBracket }) => {
+// No mide 25-OH-D sérica; estima una "carga de síntesis cutánea
+// semanal" a partir de hábitos de exposición SIN protector solar
+// (el protector bloquea la síntesis, por eso no se pregunta como
+// variable — se asume ausente en esta estimación).
+const calcularIndiceExposicionSolar = ({ diasPorSemana, minutosPorSesion, horario, edadBracket, fototipo }) => {
     const factorHorario = FACTOR_HORARIO[horario] ?? FACTOR_HORARIO.no_pico;
     const factorEdad = FACTOR_EDAD_SINTESIS[edadBracket] ?? FACTOR_EDAD_SINTESIS.menor_50;
-    const factorProtector = FACTOR_PROTECTOR_SOLAR[usaProtector ? 'si' : 'no'];
+    const factorFototipo = FACTOR_FOTOTIPO[fototipo] ?? FACTOR_FOTOTIPO.III;
 
-    const indice = (diasPorSemana || 0) * (minutosPorSesion || 0) * factorHorario * factorEdad * factorProtector;
+    const indice = (diasPorSemana || 0) * (minutosPorSesion || 0) * factorHorario * factorEdad * factorFototipo;
 
     let categoria, colorKey;
     if (indice < UMBRAL_INDICE_SOLAR_BAJO) {
-        categoria = 'alto'; // riesgo alto de síntesis insuficiente
+        categoria = 'alto';
         colorKey = 'rose';
     } else if (indice < UMBRAL_INDICE_SOLAR_MODERADO) {
         categoria = 'moderado';
@@ -297,33 +301,75 @@ const calcularIndiceExposicionSolar = ({ diasPorSemana, minutosPorSesion, horari
         colorKey = 'emerald';
     }
 
-    return {
-        indice: Math.round(indice * 10) / 10,
-        categoriaRiesgo: categoria, // 'bajo' | 'moderado' | 'alto' (riesgo de síntesis insuficiente)
-        colorKey
-    };
+    return { indice: Math.round(indice * 10) / 10, categoriaRiesgo: categoria, colorKey };
 };
 
 // Interpretación opcional de 25-OH-vitamina D sérica real (ng/mL)
 const interpretar25OHVitaminaD = (valorNgMl) => {
     if (valorNgMl === '' || valorNgMl === null || isNaN(valorNgMl)) return null;
     const v = parseFloat(valorNgMl);
-    if (v < CORTES_25OH_VITAMINA_D.deficiente) {
-        return { categoria: 'deficiente', colorKey: 'rose' };
-    }
-    if (v < CORTES_25OH_VITAMINA_D.insuficiente) {
-        return { categoria: 'insuficiente', colorKey: 'amber' };
-    }
+    if (v < CORTES_25OH_VITAMINA_D.deficiente) return { categoria: 'deficiente', colorKey: 'rose' };
+    if (v < CORTES_25OH_VITAMINA_D.insuficiente) return { categoria: 'insuficiente', colorKey: 'amber' };
     return { categoria: 'suficiente', colorKey: 'emerald' };
 };
 
+// Interpretación opcional de calcio sérico total (mg/dL)
+const interpretarCalcioSerico = (valorMgDl) => {
+    if (valorMgDl === '' || valorMgDl === null || isNaN(valorMgDl)) return null;
+    const v = parseFloat(valorMgDl);
+    if (v < RANGO_CALCIO_SERICO_NORMAL_MG_DL.min) return { categoria: 'bajo', colorKey: 'rose' };
+    if (v > RANGO_CALCIO_SERICO_NORMAL_MG_DL.max) return { categoria: 'alto', colorKey: 'amber' };
+    return { categoria: 'normal', colorKey: 'emerald' };
+};
+
 // ------------------------------------------------------------
-// 5. RIESGO ÓSEO COMPUESTO (osteopenia / osteoporosis)
+// 5. ADECUACIÓN DIETÉTICA DE VITAMINA D (dieta + suplemento)
 // ------------------------------------------------------------
-// IMPORTANTE: esta es una estimación de tamizaje orientativa basada en
-// factores de riesgo conocidos, NO un diagnóstico. El diagnóstico real
-// requiere densitometría ósea (DXA). Este puntaje está pensado para ser
-// calibrado/validado a futuro contra los resultados de DXA del estudio.
+// Suma simple del promedio diario estimado de vitamina D dietética
+// (mcg/día, a partir de fuentes semanales) más el suplemento de
+// vitamina D (si aplica), comparado contra la RDA (IOM 2011).
+const calcularAdecuacionVitaminaDDieta = (fuentes, suplementoVitD, edad) => {
+    const mcgSemanalDieta = (fuentes || []).reduce((acc, f) => {
+        if (!f.diasPorSemana || !f.vitDPorcion || !f.porcionesPorComida) return acc;
+        return acc + (f.vitDPorcion * f.porcionesPorComida * (f.vecesPorDia || 1) * f.diasPorSemana);
+    }, 0);
+    const mcgPromedioDiaDieta = mcgSemanalDieta / 7;
+
+    let mcgPromedioDiaSuplemento = 0;
+    if (suplementoVitD && suplementoVitD.mcgPorDia > 0 && suplementoVitD.diasPorSemana > 0) {
+        mcgPromedioDiaSuplemento = (suplementoVitD.mcgPorDia * suplementoVitD.diasPorSemana) / 7;
+    }
+
+    const totalPromedioDia = mcgPromedioDiaDieta + mcgPromedioDiaSuplemento;
+    const meta = (edad ?? 0) > 70 ? META_VITAMINA_D_MCG_DIA_MAYOR70 : META_VITAMINA_D_MCG_DIA;
+
+    let categoria, colorKey;
+    if (totalPromedioDia >= meta) {
+        categoria = 'adecuada';
+        colorKey = 'emerald';
+    } else if (totalPromedioDia >= meta * 0.5) {
+        categoria = 'moderada';
+        colorKey = 'amber';
+    } else {
+        categoria = 'baja';
+        colorKey = 'rose';
+    }
+
+    return {
+        mcgPromedioDiaDieta: Math.round(mcgPromedioDiaDieta * 10) / 10,
+        mcgPromedioDiaSuplemento: Math.round(mcgPromedioDiaSuplemento * 10) / 10,
+        totalPromedioDia: Math.round(totalPromedioDia * 10) / 10,
+        meta,
+        categoria,
+        colorKey
+    };
+};
+
+// ------------------------------------------------------------
+// 6. RIESGO ÓSEO COMPUESTO (osteopenia / osteoporosis)
+// ------------------------------------------------------------
+// Estimación de tamizaje orientativa, NO diagnóstica. Pensada para
+// calibrarse a futuro contra datos reales de DXA.
 const calcularRiesgoOseo = ({ porcentajeCumplimientoCalcio, categoriaRiesgoSolar, edad, sexo, diasEjercicioFuerza, fuma, alcoholFrecuente }) => {
     let puntaje = 0;
 
@@ -341,26 +387,16 @@ const calcularRiesgoOseo = ({ porcentajeCumplimientoCalcio, categoriaRiesgoSolar
     if (alcoholFrecuente) puntaje += 1;
 
     let categoria, colorKey;
-    if (puntaje <= 2) {
-        categoria = 'bajo';
-        colorKey = 'emerald';
-    } else if (puntaje <= 4) {
-        categoria = 'moderado'; // orientativo hacia osteopenia
-        colorKey = 'amber';
-    } else {
-        categoria = 'alto'; // orientativo hacia osteoporosis
-        colorKey = 'rose';
-    }
+    if (puntaje <= 2) { categoria = 'bajo'; colorKey = 'emerald'; }
+    else if (puntaje <= 4) { categoria = 'moderado'; colorKey = 'amber'; }
+    else { categoria = 'alto'; colorKey = 'rose'; }
 
     return { puntaje, puntajeMaximo: 8, categoria, colorKey };
 };
 
 // ------------------------------------------------------------
-// 6. TAMIZAJE DE SARCOPENIA (SARC-F)
+// 7. TAMIZAJE DE SARCOPENIA (SARC-F)
 // ------------------------------------------------------------
-// Puntaje validado (Malmstrom & Morley, 2013). >= 4 = riesgo probable
-// de sarcopenia. La proteína y el ejercicio de fuerza se devuelven
-// como señales contextuales, sin alterar el punto de corte validado.
 const calcularRiesgoSarcopenia = (respuestasSarcF, { proteinaAdecuada, diasEjercicioFuerza } = {}) => {
     const puntajeTotal = Object.values(respuestasSarcF || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
     const riesgoProbable = puntajeTotal >= UMBRAL_SARC_F_RIESGO;
@@ -376,4 +412,15 @@ const calcularRiesgoSarcopenia = (respuestasSarcF, { proteinaAdecuada, diasEjerc
             ejercicioFuerzaInsuficiente: (diasEjercicioFuerza ?? 0) < UMBRAL_EJERCICIO_FUERZA_SEMANAL
         }
     };
+};
+
+// ------------------------------------------------------------
+// 8. EJERCICIO — Adherencia a las guías de actividad física de la OMS
+// ------------------------------------------------------------
+const calcularAdherenciaEjercicio = ({ horasAerobicoSemana, diasFuerzaSemana, horasFuerzaSemana }) => {
+    const cumpleAerobico = (horasAerobicoSemana ?? 0) >= UMBRAL_EJERCICIO_AEROBICO_HORAS_SEMANA;
+    const cumpleFuerza = (diasFuerzaSemana ?? 0) >= UMBRAL_EJERCICIO_FUERZA_SEMANAL;
+    const horasTotalesSemana = Math.round(((horasAerobicoSemana ?? 0) + (horasFuerzaSemana ?? 0)) * 10) / 10;
+
+    return { cumpleAerobico, cumpleFuerza, horasTotalesSemana };
 };

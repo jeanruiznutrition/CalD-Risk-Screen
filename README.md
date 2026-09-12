@@ -1,4 +1,6 @@
-# CalD Risk Screen (CARDA v1.0)
+# CalD Risk Screen (CARDA v1.1)
+
+**Novedades v1.1:** ejercicio agrupado por categoría OMS (aeróbico / fortalecimiento muscular), suplementación de calcio con tipo de sal (carbonato/citrato) + mg/día + veces/día + días/semana, fototipo de piel (Fitzpatrick) en el módulo solar, FFQ de calcio ampliado (leche/yogur/queso por separado, 3 variedades de tofu Mori-Nu, frutos secos en media taza o gramos, alimentos fortificados extra ilimitados y editables), FFQ de vitamina D independiente (dieta + suplemento), interpretación de laboratorio para calcio sérico y 25-OH-vitamina D, sección de metodología explicada, y bibliografía completa. Ver detalle abajo.
 
 Herramienta de tamizaje determinística, basada en navegador (sin backend, sin
 dependencias de servidor), para estimar el riesgo de insuficiencia de calcio
