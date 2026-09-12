@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v2.5.1)
+# CalD Risk Screen (CARDA v2.6)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -56,6 +56,37 @@ publicado con desviación menor al 5%.
   estaba al 8%.
 - **Eficiencia de absorción global** visible: revela cuánto del calcio ingerido
   se aprovecha realmente.
+
+## Novedades de la v2.6
+
+- **Selección del organismo en los resultados.** Tres botones (IOM, EFSA y el
+  umbral EPIC-Oxford) gobiernan toda la herramienta: la clasificación de calcio,
+  el riesgo óseo y lo que se exporta. El selector desapareció del perfil.
+- **Tabla comparativa siempre visible**, en lugar de oculta tras un botón: muestra
+  la meta de ingesta, la meta absorbida y el resultado del participante con cada
+  organismo, más la explicación de por qué difieren.
+- **Tarjetas de resultado reordenadas**: promedio de ingesta diaria, promedio de
+  calcio absorbido y días cumplidos, cada una contrastada contra el organismo
+  elegido.
+- **Suplementación de vitamina D repuesta** como sección propia bajo la de calcio.
+  Se había perdido al unificar los cuestionarios. Pide la dosis en unidades
+  internacionales, que es como viene en la etiqueta, y convierte internamente.
+  Distingue D3, D2 y forma desconocida, que se calcula como D2 por prudencia.
+- **Cereales en medida casera**: una taza cocida o dos rebanadas de pan.
+
+## Por qué las unidades son caseras y no gramos
+
+Las calculadoras de ingesta de calcio disponibles piden las porciones en gramos,
+a veces sobre alimento crudo. Eso no es solo incómodo: degrada el dato, porque el
+participante no sabe cuántos gramos come y termina estimando, y esa estimación
+entra al cálculo como si fuera una medición. Las medidas caseras (una taza
+cocida, media taza, un bloque de tofu) reducen el error de recordatorio, que es
+la principal fuente de sesgo en un cuestionario de frecuencia.
+
+El mismo criterio explica que el catálogo sea corto: una lista extensa no aporta
+precisión si el participante se cansa a la mitad y empieza a responder de
+memoria.
+
 
 ## Idiomas
 

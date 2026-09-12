@@ -37,6 +37,25 @@ const TRADUCCION_PT = {
     food_grains: 'Cereais e grãos (arroz, massa, pão)',
     food_fortified_cereal: 'Cereal fortificado',
     help_tofu_calcium_label: 'Valor de referência do mercado panamiano. Se o rótulo mencionar sulfato de cálcio como coagulante, o aporte real pode ser bastante superior: convém ajustá-lo no campo de cálcio.',
+    vitd_supp_title: 'Suplementação de Vitamina D',
+    vitd_supp_desc: 'A dose pede-se em unidades internacionais, que é como vem no rótulo do frasco.',
+    vitd_supp_none: 'Não toma suplemento de vitamina D',
+    vitd_supp_ui_day: 'Dose (UI por toma)',
+    vitd_supp_ui_placeholder: 'Ex. 2000',
+    vitd_supp_equals_mcg: 'Equivale a {mcg} mcg',
+    vitd_supp_d2_note: 'A D2 eleva a vitamina D no sangue com menor eficácia do que a D3. Se possível, convém mudar para D3; existe D3 de líquen, adequada a dietas veganas.',
+    vitd_supp_unknown_note: 'Não se conhecendo a forma, o cálculo trata-a como D2, que é o pressuposto conservador. Verificar o rótulo permitiria afinar o resultado.',
+    vitd_supp_contribution: 'Aporte do suplemento: {ui} UI por dia ({mcg} mcg equivalentes de D3), em média na semana.',
+    framework_epic_base_note: 'O limiar EPIC-Oxford é um único valor de 525 mg/dia de ingestão, derivado de uma coorte, e não define recomendações por idade nem sexo. Ao avaliar com este critério, a meta diária de absorção e a contagem de dias continuam a usar o IOM como base, enquanto o limiar se aplica sobre a ingestão.',
+    framework_evaluate_by: 'Avaliar segundo',
+    metrics_daily_intake: 'Média de ingestão diária',
+    metrics_daily_absorbed: 'Média de cálcio absorvido',
+    metrics_efficiency_inline: 'Aproveita-se {pct}% do ingerido',
+    metrics_intake_legend: '{pct}% dos {meta} mg que {org} recomenda.',
+    metrics_absorbed_legend: '{pct}% dos {meta} mg absorvidos que equivalem à recomendação de {org}.',
+    metrics_absorbed_legend_epic: 'O limiar EPIC-Oxford foi definido sobre cálcio ingerido, não absorvido, pelo que aqui se avalia a ingestão.',
+    metrics_days_note: 'Dias em que o cálcio absorvido atingiu os {meta} mg. Mede a regularidade, não apenas a média.',
+    unit_grains: '1 chávena cozida ou 2 fatias de pão',
     unit_100g: '100 g',
     unit_serving: '1 porção',
     unit_scoop: '1 medida',
@@ -120,6 +139,7 @@ const TRADUCCION_PT = {
 
     unit_half_cup: '½ chávena',
     unit_half_cup_cooked: '½ chávena cozida',
+    gramo: 'grama',
     unit_gram: 'grama',
     unit_nuts_seeds_gram: 'grama',
     media_taza: '½ chávena',
@@ -424,6 +444,8 @@ const TRADUCCION_PT = {
     methodology_step5_title: '5. Sarcopenia (SARC-F) —',
     methodology_step5_desc: 'Utiliza-se a pontuação validada do questionário SARC-F (0 a 10, corte em 4) sem modificações. A ingestão proteica e o exercício de força mostram-se como sinais de contexto adicionais e não alteram o ponto de corte validado.',
 
+    methodology_step7_title: '7. Suplementação, nas unidades do rótulo —',
+    methodology_step7_desc: 'O cálcio pede-se em miligramas e a vitamina D em unidades internacionais, que é como vêm nos frascos, para não obrigar ninguém a converter de cabeça. O motor trabalha internamente em microgramas e faz a conversão. No cálcio importa o tipo de sal, porque o citrato absorve-se melhor do que o carbonato e não depende da acidez gástrica; na vitamina D importa a forma, porque a D2 rende menos do que a D3 e, se não for declarada, calcula-se como D2 para não sobrestimar.',
     bibliography_title: 'Bibliografia e Justificação dos Valores Utilizados',
     bib_1: 'National Institutes of Health, Office of Dietary Supplements. Calcium — Health Professional Fact Sheet: RDA de 1000-1200 mg/dia; o corpo absorve eficientemente até ~500 mg de cálcio por toma.',
     bib_2: 'Heaney RP, Dowell MS, Bierman J, et al. Absorption of calcium as the carbonate and citrate salts. J Bone Miner Res. Absorção fracional de cálcio alimentar/carbonato ~30-36% consoante a carga.',
@@ -450,5 +472,5 @@ bib_11: 'Limiares do extremo superior: NIH Office of Dietary Supplements, Vitami
 
     footer_author: 'Desenvolvido por',
     footer_specialist: 'Nutricionista-Dietista especializado em nutrição baseada em plantas. Ferramenta de rastreio determinística para uso em investigação.',
-    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos os direitos reservados. CalD Risk Screen (CARDA v2.5.1) — Panamá.'
+    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos os direitos reservados. CalD Risk Screen (CARDA v2.6) — Panamá.'
 };

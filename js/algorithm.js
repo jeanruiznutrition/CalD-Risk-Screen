@@ -15,6 +15,11 @@
 // 0. UTILIDADES DE MARCO DE REFERENCIA
 // ------------------------------------------------------------
 const obtenerReferenciaCalcio = (edad, sexo, marcoId = 'IOM') => {
+    // EPIC-Oxford no es un marco completo de ingestas de referencia sino
+    // un umbral único de 525 mg/día derivado de una cohorte. No define
+    // valores por edad ni sexo, de modo que cuando se elige como criterio
+    // de evaluación se usa el IOM como base de referencia subyacente y el
+    // umbral se aplica aparte, sobre la ingesta.
     const marco = marcoId === 'EFSA' ? MARCO_CALCIO_EFSA : MARCO_CALCIO_IOM;
     const e = Number(edad) || 30;
     const tramo = marco.tramos.find(tr =>

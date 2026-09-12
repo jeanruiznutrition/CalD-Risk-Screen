@@ -34,7 +34,6 @@ function App() {
     // --- Perfil del participante ---
     const [marcoReferencia, setMarcoReferencia] = useState('IOM');
     const [marcoVitD, setMarcoVitD] = useState(MARCO_VITD_POR_DEFECTO);
-    const [mostrarMarcos, setMostrarMarcos] = useState(false);
 
     // --- Identificación del participante y registro acumulado ---
     const [participante, setParticipante] = useState({
@@ -97,7 +96,10 @@ function App() {
     });
 
     // --- FFQ de fuentes de vitamina D + suplementación ---
-    const [suplementoVitD, setSuplementoVitD] = useState({ mcgPorDia: 0, diasPorSemana: 0, forma: 'D3' });
+    // La dosis se captura en unidades internacionales porque es la unidad
+    // que aparece en las etiquetas de los suplementos. El motor trabaja en
+    // microgramos, así que se convierte al calcular (1 mcg = 40 UI).
+    const [suplementoVitD, setSuplementoVitD] = useState({ uiPorDia: '', diasPorSemana: 0, forma: 'D3' });
 
     // --- Exposición solar (con fototipo, sin protector solar como variable) ---
     const [exposicionSolar, setExposicionSolar] = useState({
@@ -266,10 +268,6 @@ function App() {
         [perfil.edad, perfil.sexo, marcoReferencia]
     );
 
-    const referenciaCalcioAlterna = useMemo(
-        () => obtenerReferenciaCalcio(Number(perfil.edad) || 30, perfil.sexo, marcoReferencia === 'IOM' ? 'EFSA' : 'IOM'),
-        [perfil.edad, perfil.sexo, marcoReferencia]
-    );
 
     const resultadosCalcio = useMemo(
         () => ejecutarSemanaVirtualCalcio(alimentosParaAlgoritmo, suplementoCalcioActivo, manualOverrides, referenciaCalcio),
@@ -300,7 +298,15 @@ function App() {
     );
 
     const resultadoVitDDieta = useMemo(
-        () => calcularAdecuacionVitaminaD(alimentosParaAlgoritmo, suplementoVitD, Number(perfil.edad) || 0),
+        () => calcularAdecuacionVitaminaD(
+            alimentosParaAlgoritmo,
+            {
+                mcgPorDia: (parseFloat(suplementoVitD.uiPorDia) || 0) / UI_POR_MCG_VITAMINA_D,
+                diasPorSemana: suplementoVitD.diasPorSemana,
+                forma: suplementoVitD.forma
+            },
+            Number(perfil.edad) || 0
+        ),
         [alimentosParaAlgoritmo, suplementoVitD, perfil.edad]
     );
 
@@ -315,8 +321,21 @@ function App() {
         return { cat: 'alto', color: 'rose' };
     })();
     
+    // Razón de adecuación según el organismo elegido. Se calcula aquí, de
+    // forma independiente, para que el riesgo óseo no dependa de valores
+    // declarados más abajo en el archivo.
+    const razonSegunMarco = useMemo(() => {
+        if (marcoReferencia === 'EPIC') {
+            const meta = UMBRAL_PROTECTOR_EPIC_OXFORD_MG;
+            return meta > 0 ? Math.round((resultadosCalcio.promedioIngeridoSemanal / meta) * 1000) / 10 : 0;
+        }
+        const rda = obtenerReferenciaCalcio(Number(perfil.edad) || 30, perfil.sexo, marcoReferencia).rda;
+        const metaAbs = rda * absorcionFraccionalPorCarga(rda / 3);
+        return metaAbs > 0 ? Math.round((resultadosCalcio.promedioAbsorbidoSemanal / metaAbs) * 1000) / 10 : 0;
+    }, [marcoReferencia, resultadosCalcio, perfil.edad, perfil.sexo]);
+
     const resultadoOseo = useMemo(() => calcularRiesgoOseo({
-        porcentajeCumplimientoCalcio: resultadosCalcio.razonAdecuacion,
+        porcentajeCumplimientoCalcio: razonSegunMarco,
         categoriaRiesgoSolar: categoriaSolar.cat,
         categoriaVitDDieta: resultadoVitDDieta.categoria,
         edad: Number(perfil.edad) || 0,
@@ -326,7 +345,7 @@ function App() {
         alcoholFrecuente: perfil.alcoholFrecuente,
         bajoUmbralEpicOxford: resultadosCalcio.bajoUmbralEpicOxford,
         esVegano: perfil.grupoEstudio === 'Vegano'
-    }), [resultadosCalcio, categoriaSolar.cat, resultadoVitDDieta.categoria, perfil, ejercicio.diasFuerzaSemana]);
+    }), [razonSegunMarco, resultadosCalcio, categoriaSolar.cat, resultadoVitDDieta.categoria, perfil, ejercicio.diasFuerzaSemana]);
 
     const resultadoProteina = useMemo(() => calcularProteinaDesdeCuestionario(alimentosParaAlgoritmo, {
         pesoKg: perfil.pesoKg,
@@ -380,7 +399,47 @@ function App() {
     }, [resultadosCalcio, perfil.edad, perfil.sexo, marcoReferencia]);
     const nombreAlimento = (al) => al.nombreLibre || t(al.nombreKey);
 
-    const clasifCalcio = clasificarAdecuacionCalcio(resultadosCalcio.razonAdecuacion);
+    // Las dos primeras tarjetas se evalúan contra el organismo elegido.
+    // El umbral de EPIC-Oxford es de INGESTA observada, no una meta de
+    // absorción, por lo que ahí la comparación se hace sobre lo ingerido.
+    const filaMarcoActual = comparacionMarcos.find(m => m.esActual) || comparacionMarcos[0];
+
+    const barraPorRazon = (r) => r >= 100 ? 'bg-emerald-500' : r >= 75 ? 'bg-amber-500' : 'bg-rose-500';
+
+    const metricaIngesta = (() => {
+        const meta = filaMarcoActual.rda;
+        const pct = meta > 0 ? Math.round((resultadosCalcio.promedioIngeridoSemanal / meta) * 1000) / 10 : 0;
+        return {
+            porcentaje: pct,
+            colorBarra: barraPorRazon(pct),
+            leyenda: t('metrics_intake_legend')
+                .replace('{pct}', pct)
+                .replace('{meta}', meta)
+                .replace('{org}', t(filaMarcoActual.nombreKey))
+        };
+    })();
+
+    const metricaAbsorbida = (() => {
+        if (filaMarcoActual.id === 'EPIC') {
+            return {
+                porcentaje: metricaIngesta.porcentaje,
+                colorBarra: barraPorRazon(metricaIngesta.porcentaje),
+                leyenda: t('metrics_absorbed_legend_epic')
+            };
+        }
+        const meta = filaMarcoActual.metaAbsorbida;
+        const pct = meta > 0 ? Math.round((resultadosCalcio.promedioAbsorbidoSemanal / meta) * 1000) / 10 : 0;
+        return {
+            porcentaje: pct,
+            colorBarra: barraPorRazon(pct),
+            leyenda: t('metrics_absorbed_legend')
+                .replace('{pct}', pct)
+                .replace('{meta}', meta)
+                .replace('{org}', t(filaMarcoActual.nombreKey))
+        };
+    })();
+
+    const clasifCalcio = clasificarAdecuacionCalcio(razonSegunMarco);
     const infoRiesgoCalcio = {
         clasificacion: t(`diag_cal_${clasifCalcio.categoria}`),
         descripcion: t(`diag_cal_${clasifCalcio.categoria}_desc`),
@@ -516,7 +575,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.5.1\r\n";
+        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.6\r\n";
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -558,7 +617,7 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.5.1</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.6</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -686,21 +745,6 @@ function App() {
                                     <input type="number" min="0" step="0.5" placeholder={t('profile_calf_placeholder')} value={perfil.circunferenciaPantorrilla}
                                         onChange={(e) => handlePerfilChange('circunferenciaPantorrilla', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
                                         class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
-                                </div>
-                                <div class="col-span-2 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('framework_label')}</label>
-                                    <select value={marcoReferencia} onChange={(e) => setMarcoReferencia(e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="IOM">{t('framework_iom')}</option>
-                                        <option value="EFSA">{t('framework_efsa')}</option>
-                                    </select>
-                                    <p class="text-[10px] text-slate-400 mt-1.5">
-                                        {t('framework_note')
-                                            .replace('{actual}', referenciaCalcio.marco)
-                                            .replace('{rdaActual}', referenciaCalcio.rda)
-                                            .replace('{otro}', referenciaCalcioAlterna.marco)
-                                            .replace('{rdaOtro}', referenciaCalcioAlterna.rda)}
-                                    </p>
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('select_diet')}</label>
@@ -837,6 +881,61 @@ function App() {
                                         <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{t('modifier_losses').replace('{total}', calcioConModificadores.perdidas.perdidaTotal).replace('{na}', calcioConModificadores.perdidas.perdidaSodio).replace('{caf}', calcioConModificadores.perdidas.perdidaCafeina)}</p>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+
+
+                        {/* CARD: SUPLEMENTACIÓN DE VITAMINA D */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-capsules text-brand-600"></i> {t('vitd_supp_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('vitd_supp_desc')}</p>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('vitd_supp_form_label')}</label>
+                                    <select value={suplementoVitD.forma} onChange={(e) => handleSuplementoVitDChange('forma', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="ninguna">{t('vitd_supp_none')}</option>
+                                        {FORMAS_SUPLEMENTO_VITD.map(f => <option key={f.id} value={f.id}>{t(f.key)}</option>)}
+                                    </select>
+                                </div>
+
+                                {suplementoVitD.forma !== 'ninguna' && (
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('vitd_supp_ui_day')}</label>
+                                            <input type="text" inputMode="decimal" placeholder={t('vitd_supp_ui_placeholder')} value={suplementoVitD.uiPorDia}
+                                                onChange={(e) => handleSuplementoVitDChange('uiPorDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100" />
+                                            {parseFloat(suplementoVitD.uiPorDia) > 0 && (
+                                                <p class="text-[10px] text-slate-400 mt-1">{t('vitd_supp_equals_mcg').replace('{mcg}', Math.round((parseFloat(suplementoVitD.uiPorDia) / 40) * 10) / 10)}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_days_week')}</label>
+                                            <select value={suplementoVitD.diasPorSemana} onChange={(e) => handleSuplementoVitDChange('diasPorSemana', parseInt(e.target.value))}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                {[0,1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {suplementoVitD.forma === 'D2' && (
+                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">{t('vitd_supp_d2_note')}</p>
+                                )}
+                                {suplementoVitD.forma === 'desconocida' && (
+                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">{t('vitd_supp_unknown_note')}</p>
+                                )}
+                                {suplementoVitD.forma !== 'ninguna' && parseFloat(suplementoVitD.uiPorDia) > 0 && (
+                                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                            {t('vitd_supp_contribution')
+                                                .replace('{ui}', Math.round(resultadoVitDDieta.suplEq * 40))
+                                                .replace('{mcg}', resultadoVitDDieta.suplEq)}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1109,55 +1208,77 @@ function App() {
                     <section class="lg:col-span-7 flex flex-col gap-8">
 
                         {/* DASHBOARD DE MÉTRICAS — CALCIO */}
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                                <div class="absolute -right-6 -bottom-6 text-brand-100 dark:text-brand-900/10 text-8xl pointer-events-none font-bold">%</div>
-                                <div>
-                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_adequacy')}</span>
-                                    <h2 class="text-4xl font-extrabold text-slate-800 dark:text-white mt-2">{resultadosCalcio.razonAdecuacion}%</h2>
-                                </div>
-                                <div class="mt-4">
-                                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                                        <div class="bg-brand-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, resultadosCalcio.razonAdecuacion)}%` }}></div>
-                                    </div>
-                                    <p class="text-[10px] text-slate-500 mt-1.5">{t('metrics_target').replace('{meta}', resultadosCalcio.metaAbsorbidaDiaria).replace('{marco}', resultadosCalcio.referencia.marco).replace('{rda}', resultadosCalcio.referencia.rda)}</p>
-                                    <button onClick={() => setMostrarMarcos(!mostrarMarcos)} class="text-[10px] font-bold text-brand-600 dark:text-brand-400 mt-1.5 flex items-center gap-1 hover:underline">
-                                        <i class={`fa-solid fa-chevron-${mostrarMarcos ? 'up' : 'down'} text-[8px]`}></i> {t('metrics_compare_frameworks')}
+                        <div>
+                            {/* Selector de organismo: gobierna toda la herramienta */}
+                            <div class="flex flex-wrap items-center gap-2 mb-4">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">{t('framework_evaluate_by')}</span>
+                                {[{ id: 'IOM', key: 'frameworks_iom_name' }, { id: 'EFSA', key: 'frameworks_efsa_name' }, { id: 'EPIC', key: 'frameworks_epic_name' }].map(m => (
+                                    <button key={m.id} onClick={() => setMarcoReferencia(m.id)}
+                                        class={`px-3 py-1.5 text-[11px] font-bold rounded-lg border transition-all ${marcoReferencia === m.id
+                                            ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-400'}`}>
+                                        {t(m.key)}
                                     </button>
-                                </div>
+                                ))}
                             </div>
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                                <div>
-                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_days_title')}</span>
-                                    <div class="flex items-baseline gap-1 mt-2">
-                                        <span class="text-4xl font-extrabold text-emerald-500">{resultadosCalcio.diasCumplidos}</span>
-                                        <span class="text-sm font-semibold text-slate-400">{t('metrics_days_subtitle')}</span>
+
+                            {marcoReferencia === 'EPIC' && (
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-3 leading-relaxed p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">{t('framework_epic_base_note')}</p>
+                            )}
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                {/* 1. Promedio de ingesta diaria */}
+                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_daily_intake')}</span>
+                                        <h2 class="text-4xl font-extrabold text-slate-800 dark:text-white mt-2">{resultadosCalcio.promedioIngeridoSemanal} <span class="text-lg font-semibold">mg</span></h2>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                            <div class={`h-2 rounded-full transition-all duration-500 ${metricaIngesta.colorBarra}`} style={{ width: `${Math.min(100, metricaIngesta.porcentaje)}%` }}></div>
+                                        </div>
+                                        <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{metricaIngesta.leyenda}</p>
                                     </div>
                                 </div>
-                                <div class="mt-4 flex gap-1.5">
-                                    {resultadosCalcio.reporteDias.map((d, idx) => (
-                                        <div key={idx} title={t(d.diaNombreKey)} class={`flex-1 h-3 rounded-full ${d.cumpleMeta ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                                <div>
-                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_absorption_title')}</span>
-                                    <h2 class="text-4xl font-extrabold text-slate-800 dark:text-white mt-2">{resultadosCalcio.promedioAbsorbidoSemanal} <span class="text-lg font-semibold">mg/d</span></h2>
-                                    <p class="text-[11px] text-slate-400 mt-1">{t('metrics_of_ingested').replace('{ing}', resultadosCalcio.promedioIngeridoSemanal)}</p>
-                                </div>
-                                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                    <div class="flex items-baseline justify-between">
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('metrics_efficiency')}</span>
-                                        <span class="text-lg font-extrabold text-brand-600 dark:text-brand-400">{resultadosCalcio.eficienciaGlobal}%</span>
+
+                                {/* 2. Promedio de calcio absorbido */}
+                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_daily_absorbed')}</span>
+                                        <h2 class="text-4xl font-extrabold text-slate-800 dark:text-white mt-2">{resultadosCalcio.promedioAbsorbidoSemanal} <span class="text-lg font-semibold">mg</span></h2>
+                                        <p class="text-[11px] text-slate-400 mt-1">{t('metrics_efficiency_inline').replace('{pct}', resultadosCalcio.eficienciaGlobal)}</p>
                                     </div>
-                                    <p class="text-[10px] text-slate-500 leading-relaxed mt-1">{t('metrics_efficiency_note')}</p>
+                                    <div class="mt-4">
+                                        <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                            <div class={`h-2 rounded-full transition-all duration-500 ${metricaAbsorbida.colorBarra}`} style={{ width: `${Math.min(100, metricaAbsorbida.porcentaje)}%` }}></div>
+                                        </div>
+                                        <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{metricaAbsorbida.leyenda}</p>
+                                    </div>
+                                </div>
+
+                                {/* 3. Días del participante cumplidos */}
+                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('metrics_days_title')}</span>
+                                        <div class="flex items-baseline gap-1 mt-2">
+                                            <span class="text-4xl font-extrabold text-emerald-500">{resultadosCalcio.diasCumplidos}</span>
+                                            <span class="text-sm font-semibold text-slate-400">{t('metrics_days_subtitle')}</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex gap-1.5">
+                                            {resultadosCalcio.reporteDias.map((d, idx) => (
+                                                <div key={idx} title={t(d.diaNombreKey)} class={`flex-1 h-3 rounded-full ${d.cumpleMeta ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
+                                            ))}
+                                        </div>
+                                        <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('metrics_days_note').replace('{meta}', resultadosCalcio.metaAbsorbidaDiaria)}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* COMPARACIÓN DE MARCOS DE REFERENCIA */}
-                        {mostrarMarcos && (
+                        {(
                             <div class="bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-900 rounded-2xl p-5 shadow-sm">
                                 <h4 class="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-brand-600"></i> {t('frameworks_title')}</h4>
 
@@ -1429,6 +1550,7 @@ function App() {
                                 <p><strong>{t('methodology_step4_title')}</strong> {t('methodology_step4_desc')}</p>
                                 <p><strong>{t('methodology_step5_title')}</strong> {t('methodology_step5_desc')}</p>
                                 <p><strong>{t('methodology_step6_title')}</strong> {t('methodology_step6_desc')}</p>
+                                <p><strong>{t('methodology_step7_title')}</strong> {t('methodology_step7_desc')}</p>
                             </div>
                         </div>
 
@@ -1536,7 +1658,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.5.1).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.6).</p>
                 </div>
 
             </main>

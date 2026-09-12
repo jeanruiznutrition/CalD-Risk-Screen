@@ -54,7 +54,8 @@ const contexto = {};
     'MARCO_CALCIO_IOM',
     'MARCO_CALCIO_EFSA',
     'MED_POR_FOTOTIPO_SED',
-    'UMBRAL_PROTECTOR_EPIC_OXFORD_MG'
+    'UMBRAL_PROTECTOR_EPIC_OXFORD_MG',
+    'UI_POR_MCG_VITAMINA_D'
 ].join(',') + '});')).call(contexto);
 
 const {
@@ -64,7 +65,7 @@ const {
     calcularAdecuacionVitaminaD, calcularProteinaDesdeCuestionario, calcularExposicionSolarEstandar,
     calcularRiesgoSarcopenia, aplicarModificadoresCalcio,
     interpretar25OHVitaminaD, clasificarAdecuacionCalcio,
-    ALIMENTOS_INICIALES
+    ALIMENTOS_INICIALES, UMBRAL_PROTECTOR_EPIC_OXFORD_MG, UI_POR_MCG_VITAMINA_D
 } = contexto;
 
 // ------------------------------------------------------------
@@ -539,6 +540,82 @@ verificarCierto('El tofu se beneficia de la curva de carga al ser una porción m
 verificarCierto('El tofu aporta proteína además de calcio',
     tofuEF.proteinaPorcion > 10,
     'El tofu es fuente proteica relevante en dietas vegetales');
+
+
+
+// ============================================================
+// 15. EVALUACIÓN SEGÚN ORGANISMO Y SUPLEMENTOS
+// ============================================================
+bloque('15. Evaluación según el organismo elegido');
+
+const dietaEval = [
+    construir('tofu_extra_firme', 5), construir('bebida_veg_fortificada', 7),
+    construir('verduras_bajo_oxalato', 7, 2), construir('legumbres', 5),
+    construir('cereales_granos', 7, 3), construir('almendras', 7)
+];
+const refEval = obtenerReferenciaCalcio(35, 'femenino', 'IOM');
+const resEval = ejecutarSemanaVirtualCalcio(dietaEval, null, {}, refEval);
+
+const razonPorMarco = (marco) => {
+    if (marco === 'EPIC') {
+        return Math.round((resEval.promedioIngeridoSemanal / UMBRAL_PROTECTOR_EPIC_OXFORD_MG) * 1000) / 10;
+    }
+    const rda = obtenerReferenciaCalcio(35, 'femenino', marco).rda;
+    const metaAbs = rda * absorcionFraccionalPorCarga(rda / 3);
+    return Math.round((resEval.promedioAbsorbidoSemanal / metaAbs) * 1000) / 10;
+};
+
+verificarCierto('La misma dieta se clasifica distinto según el organismo elegido',
+    clasificarAdecuacionCalcio(razonPorMarco('IOM')).categoria !== clasificarAdecuacionCalcio(razonPorMarco('EPIC')).categoria,
+    'El desacuerdo entre criterios es real y la herramienta debe exponerlo');
+
+verificarCierto('La meta del IOM es más exigente que la de la EFSA',
+    obtenerReferenciaCalcio(35, 'femenino', 'IOM').rda > obtenerReferenciaCalcio(35, 'femenino', 'EFSA').rda,
+    'IOM 1000 mg frente a EFSA 950 mg en adultos');
+
+verificarIgual('EPIC-Oxford usa el IOM como base subyacente de referencia',
+    obtenerReferenciaCalcio(35, 'femenino', 'EPIC').marco, 'IOM',
+    'EPIC-Oxford es un umbral único de ingesta, no un marco completo por edad y sexo');
+
+bloque('16. Suplementación de vitamina D');
+
+// La interfaz captura la dosis en unidades internacionales y la convierte
+// a microgramos antes de entregarla al motor (1 mcg = 40 UI).
+const uiAMcg = (ui) => ui / UI_POR_MCG_VITAMINA_D;
+
+verificar('2000 UI equivalen a 50 mcg',
+    uiAMcg(2000), 50, 0.001, 'Factor de conversión: 1 mcg = 40 UI');
+
+const supD3 = calcularAdecuacionVitaminaD([], { mcgPorDia: uiAMcg(2000), diasPorSemana: 7, forma: 'D3' }, 35);
+const supD2 = calcularAdecuacionVitaminaD([], { mcgPorDia: uiAMcg(2000), diasPorSemana: 7, forma: 'D2' }, 35);
+const supDesc = calcularAdecuacionVitaminaD([], { mcgPorDia: uiAMcg(2000), diasPorSemana: 7, forma: 'desconocida' }, 35);
+
+verificarCierto('A igual dosis en UI, la D3 rinde más que la D2',
+    supD3.totalEq > supD2.totalEq,
+    'Tripkovic et al., Am J Clin Nutr 2012');
+
+verificarIgual('Una forma no declarada se calcula como D2, el supuesto conservador',
+    supDesc.totalEq, supD2.totalEq,
+    'Evita sobrestimar el aporte real cuando falta el dato');
+
+verificarCierto('Un suplemento de 2000 UI de D3 cubre la recomendación diaria',
+    supD3.categoria === 'adecuada',
+    'RDA del IOM: 600 UI (15 mcg) para adultos de 1 a 70 años');
+
+bloque('17. Unidades del cuestionario pensadas para el paciente');
+
+const cereales = alimento('cereales_granos');
+verificarIgual('Los cereales se piden en una unidad casera, no en gramos',
+    cereales.porcionUnidadKey, 'unit_grains',
+    'Una taza cocida o dos rebanadas de pan son medidas que el paciente puede recordar');
+
+verificarCierto('Las verduras se contabilizan cocidas',
+    alimento('verduras_bajo_oxalato').soloCocido === true && alimento('verduras_alto_oxalato').soloCocido === true,
+    'Medir verdura cruda en gramos no es realista fuera del laboratorio');
+
+verificarCierto('Todas las porciones del catálogo usan medidas caseras o unidades naturales',
+    ALIMENTOS_INICIALES.every(a => typeof a.porcionUnidadKey === 'string' && a.porcionUnidadKey.length > 0),
+    'Diferencia frente a las calculadoras que piden gramos de alimento crudo');
 
 
 // ============================================================

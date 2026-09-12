@@ -37,6 +37,25 @@ const TRADUCCION_EN = {
     food_grains: 'Cereals and grains (rice, pasta, bread)',
     food_fortified_cereal: 'Fortified cereal',
     help_tofu_calcium_label: 'Reference value from the Panamanian market. If the label lists calcium sulfate as coagulant, the actual contribution may be considerably higher: adjust the calcium field accordingly.',
+    vitd_supp_title: 'Vitamin D Supplementation',
+    vitd_supp_desc: 'The dose is entered in international units, which is how it appears on the bottle label.',
+    vitd_supp_none: 'Does not take a vitamin D supplement',
+    vitd_supp_ui_day: 'Dose (IU per intake)',
+    vitd_supp_ui_placeholder: 'e.g. 2000',
+    vitd_supp_equals_mcg: 'Equals {mcg} mcg',
+    vitd_supp_d2_note: 'D2 raises blood vitamin D less effectively than D3. Switching to D3 is preferable where possible; lichen-derived D3 is suitable for vegan diets.',
+    vitd_supp_unknown_note: 'With the form unknown, the calculation treats it as D2, the conservative assumption. Checking the label would refine the result.',
+    vitd_supp_contribution: 'Supplement contribution: {ui} IU per day ({mcg} mcg D3 equivalent), averaged across the week.',
+    framework_epic_base_note: 'The EPIC-Oxford threshold is a single value of 525 mg/day of intake, derived from a cohort, and does not define recommendations by age or sex. When evaluating under this criterion, the daily absorption target and the day count still use the IOM as their base, while the threshold is applied to intake.',
+    framework_evaluate_by: 'Evaluate by',
+    metrics_daily_intake: 'Average daily intake',
+    metrics_daily_absorbed: 'Average calcium absorbed',
+    metrics_efficiency_inline: '{pct}% of intake is absorbed',
+    metrics_intake_legend: '{pct}% of the {meta} mg recommended by {org}.',
+    metrics_absorbed_legend: '{pct}% of the {meta} mg absorbed that corresponds to the {org} recommendation.',
+    metrics_absorbed_legend_epic: 'The EPIC-Oxford threshold was defined on ingested calcium, not absorbed, so intake is evaluated here.',
+    metrics_days_note: 'Days on which absorbed calcium reached {meta} mg. Measures regularity, not just the average.',
+    unit_grains: '1 cup cooked or 2 slices of bread',
     unit_100g: '100 g',
     unit_serving: '1 serving',
     unit_scoop: '1 scoop',
@@ -128,6 +147,7 @@ const TRADUCCION_EN = {
     // ---- Units ----
     unit_half_cup: '½ cup',
     unit_half_cup_cooked: '½ cup cooked',
+    gramo: 'gram',
     unit_gram: 'gram',
     unit_nuts_seeds_gram: 'gram',
     media_taza: '½ cup',
@@ -454,6 +474,8 @@ const TRADUCCION_EN = {
     methodology_step5_desc: 'The validated SARC-F score (0 to 10, cut-off at 4) is used unmodified. Protein intake and strength exercise are shown as additional contextual signals and do not alter the validated cut-off.',
 
     // ---- Bibliography ----
+    methodology_step7_title: '7. Supplements, in the units on the label —',
+    methodology_step7_desc: 'Calcium is entered in milligrams and vitamin D in international units, as they appear on the bottles, so nobody has to convert in their head. The engine works internally in micrograms and handles the conversion. For calcium the salt matters, since citrate absorbs better than carbonate and does not depend on gastric acidity; for vitamin D the form matters, since D2 yields less than D3 and, when undeclared, is computed as D2 so as not to overestimate.',
     bibliography_title: 'Bibliography and Justification of the Figures Used',
     bib_1: 'National Institutes of Health, Office of Dietary Supplements. Calcium — Health Professional Fact Sheet: RDA of 1000-1200 mg/day; the body efficiently absorbs up to ~500 mg of calcium per serving.',
     bib_2: 'Heaney RP, Dowell MS, Bierman J, et al. Absorption of calcium as the carbonate and citrate salts. J Bone Miner Res. Fractional absorption of dietary/carbonate calcium ~30-36% depending on load.',
@@ -480,5 +502,5 @@ bib_11: 'Upper-end thresholds: NIH Office of Dietary Supplements, Vitamin D Heal
 
     footer_author: 'Developed by',
     footer_specialist: 'Registered Dietitian-Nutritionist specialised in plant-based nutrition. Deterministic screening tool for research use.',
-    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. All rights reserved. CalD Risk Screen (CARDA v2.5.1) — Panama.'
+    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. All rights reserved. CalD Risk Screen (CARDA v2.6) — Panama.'
 };

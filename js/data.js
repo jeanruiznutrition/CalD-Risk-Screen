@@ -437,7 +437,7 @@ const ALIMENTOS_INICIALES = [
         vitDPorcion: 0, formaVitD: null,
         proteinaPorcion: 4,
         gramosPorcion: 100,
-        porcionUnidadKey: 'unit_serving',
+        porcionUnidadKey: 'unit_grains',
         icono: 'fa-solid fa-wheat-awn',
         maxPorciones: 4,
         fuenteKey: 'src_usda'
