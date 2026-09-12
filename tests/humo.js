@@ -92,6 +92,115 @@ const entorno = {
     ReactDOM: { createRoot: () => ({ render() {} }) }
 };
 
+
+// ------------------------------------------------------------
+// TRANSFORMADOR MÍNIMO DE JSX
+// ------------------------------------------------------------
+// Convierte el JSX del componente en llamadas h(etiqueta, props, hijos)
+// para poder EJECUTAR el render en Node, sin depender de Babel. Cubre el
+// subconjunto de JSX que usa este proyecto: atributos con comillas o
+// llaves, expresiones incrustadas, anidamiento y etiquetas autocerradas.
+function transformarJSX(texto) {
+    const finEtiqueta = (t, k) => {
+        let j = k, d = 0, q = null;
+        while (j < t.length) {
+            const c = t[j];
+            if (q) { if (c === q && t[j - 1] !== '\\') q = null; }
+            else if (c === '"' || c === "'") q = c;
+            else if (c === '{') d++;
+            else if (c === '}') d--;
+            else if (c === '>' && d === 0) return j;
+            j++;
+        }
+        return -1;
+    };
+
+    const finLlave = (t, k) => {
+        let j = k, d = 0, q = null;
+        while (j < t.length) {
+            const c = t[j];
+            if (q) { if (c === q && t[j - 1] !== '\\') q = null; }
+            else if (c === '"' || c === "'") q = c;
+            else if (c === '{') d++;
+            else if (c === '}') { d--; if (d === 0) return j; }
+            j++;
+        }
+        return -1;
+    };
+
+    const parseProps = (raw) => {
+        const props = [];
+        let i = 0;
+        while (i < raw.length) {
+            const m = /^\s*([A-Za-z_][\w:-]*)\s*=\s*/.exec(raw.slice(i));
+            if (!m) break;
+            const nombre = m[1];
+            i += m[0].length;
+            if (raw[i] === '{') {
+                const j = finLlave(raw, i);
+                props.push(JSON.stringify(nombre) + ': (' + interno(raw.slice(i + 1, j)) + ')');
+                i = j + 1;
+            } else if (raw[i] === '"' || raw[i] === "'") {
+                const q = raw[i], j = raw.indexOf(q, i + 1);
+                props.push(JSON.stringify(nombre) + ': ' + JSON.stringify(raw.slice(i + 1, j)));
+                i = j + 1;
+            } else break;
+        }
+        return props.length ? '{' + props.join(', ') + '}' : 'null';
+    };
+
+    function parse(t, k) {
+        const m = /^<\s*([A-Za-z][\w.]*)/.exec(t.slice(k));
+        const nombre = m[1];
+        const iniProps = k + m[0].length;
+        const fin = finEtiqueta(t, iniProps);
+        let raw = t.slice(iniProps, fin);
+        const auto = raw.trimEnd().endsWith('/');
+        if (auto) raw = raw.trimEnd().slice(0, -1);
+        const props = parseProps(raw);
+        const etiqueta = /^[a-z]/.test(nombre) ? JSON.stringify(nombre) : nombre;
+        if (auto) return ['h(' + etiqueta + ', ' + props + ')', fin + 1];
+
+        const hijos = [];
+        let p = fin + 1;
+        const reCierre = new RegExp('^</\\s*' + nombre.replace('.', '\\.') + '\\s*>');
+        while (p < t.length) {
+            if (t[p] === '<') {
+                const mc = reCierre.exec(t.slice(p));
+                if (mc) {
+                    return ['h(' + etiqueta + ', ' + props + (hijos.length ? ', ' + hijos.join(', ') : '') + ')', p + mc[0].length];
+                }
+                const [code, p2] = parse(t, p);
+                hijos.push(code); p = p2; continue;
+            }
+            if (t[p] === '{') {
+                const j = finLlave(t, p);
+                const expr = t.slice(p + 1, j);
+                if (!expr.trim().startsWith('/*')) hijos.push('(' + interno(expr) + ')');
+                p = j + 1; continue;
+            }
+            let j = p;
+            while (j < t.length && t[j] !== '<' && t[j] !== '{') j++;
+            const txt = t.slice(p, j).trim();
+            if (txt) hijos.push(JSON.stringify(txt));
+            p = j;
+        }
+        return ['h(' + etiqueta + ', ' + props + ')', p];
+    }
+
+    function interno(x) {
+        let r = '', p = 0;
+        while (p < x.length) {
+            if (x[p] === '<' && /^<\s*[A-Za-z]/.test(x.slice(p))) {
+                const [c, p2] = parse(x, p); r += c; p = p2;
+            } else { r += x[p]; p++; }
+        }
+        return r;
+    }
+
+    return interno(texto);
+}
+
 let errores = [];
 let advertencias = [];
 
@@ -107,6 +216,56 @@ try {
        entorno.window, entorno.Blob, entorno.alert, entorno.ReactDOM);
 } catch (e) {
     errores.push(e);
+}
+
+
+
+// ============================================================
+// RENDER COMPLETO
+// ============================================================
+// La comprobación anterior ejecuta la lógica; ésta ejecuta además el
+// JSX, que es donde aparecen los accesos a propiedades de objetos
+// indefinidos. Ambos fallos dejan la pantalla en gris.
+let errorRender = null;
+try {
+    const finFuncion = fuenteApp.lastIndexOf('\n}\n\nconst root');
+    const cuerpoCompleto = fuenteApp.slice(inicioCuerpo + 'function App() {'.length, finFuncion);
+    const transformado = transformarJSX(cuerpoCompleto);
+
+    const h = (tag, props, ...hijos) => {
+        const recorrer = (x) => { if (Array.isArray(x)) x.forEach(recorrer); };
+        hijos.forEach(recorrer);
+        return { tag, props, hijos };
+    };
+
+    const fnRender = new Function(
+        'React', 'h', 'document', 'navigator', 'localStorage', 'window', 'Blob', 'alert', 'ReactDOM',
+        fuenteMotor + '\n' + fuenteI18n + '\n' +
+        'const { useState, useEffect, useMemo } = React;\n' +
+        'function App() {\n' + transformado + '\n}\n' +
+        'return App();'
+    );
+    fnRender(React, h, documentSimulado, entorno.navigator, entorno.localStorage,
+             entorno.window, entorno.Blob, entorno.alert, entorno.ReactDOM);
+} catch (e) {
+    errorRender = e;
+    errores.push(e);
+}
+
+// ============================================================
+// ARCHIVOS QUE index.html NECESITA
+// ============================================================
+// Si cualquiera de estos no llega al servidor, la aplicación no arranca
+// y el usuario ve una pantalla en gris sin ninguna pista.
+const html = fs.readFileSync(path.join(raiz, 'index.html'), 'utf8');
+const referenciados = [...html.matchAll(/src="([^"]+\.js)[^"]*"/g)]
+    .map(m => m[1])
+    .filter(r => !r.startsWith('http'));
+const ausentes = referenciados.filter(r => !fs.existsSync(path.join(raiz, r)));
+if (ausentes.length) {
+    errores.push(new Error('index.html referencia archivos que no existen: ' + ausentes.join(', ')));
+} else {
+    advertencias.push(`ARCHIVOS_OK:${referenciados.length}`);
 }
 
 // --- Comprobaciones estáticas adicionales sobre el JSX ---
@@ -140,6 +299,9 @@ if (errores.length === 0) {
     console.log(`  ${VERDE}✓${FIN} La lógica del componente se ejecuta sin errores`);
     console.log(`  ${VERDE}✓${FIN} Todas las constantes se declaran antes de usarse`);
     console.log(`  ${VERDE}✓${FIN} Todas las funciones del motor existen y son accesibles`);
+    console.log(`  ${VERDE}✓${FIN} El render completo del JSX se ejecuta sin errores`);
+    const okArchivos = advertencias.find(a => a.startsWith('ARCHIVOS_OK:'));
+    if (okArchivos) console.log(`  ${VERDE}✓${FIN} Los ${okArchivos.split(':')[1]} archivos que index.html carga existen`);
 } else {
     errores.forEach(e => {
         console.log(`  ${ROJO}✗${FIN} ${NEGRITA}${e.name}: ${e.message}${FIN}`);
@@ -155,13 +317,13 @@ if (errores.length === 0) {
     });
 }
 
-advertencias.forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
+advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:')).forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
 
 if (errores.length > 0) {
     console.log(`\n${ROJO}${NEGRITA}La aplicación fallaría al cargar.${FIN}\n`);
     process.exit(1);
 }
-if (advertencias.length > 0) {
+if (advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:')).length > 0) {
     console.log(`\n${AMARILLO}Se ejecuta, pero hay advertencias que revisar.${FIN}\n`);
     process.exit(0);
 }

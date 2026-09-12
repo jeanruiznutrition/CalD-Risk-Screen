@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v2.5)
+# CalD Risk Screen (CARDA v2.5.1)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -125,6 +125,40 @@ inhibidores y la integridad de las traducciones. Cada prueba imprime su fuente b
 
 Esto permite afirmar, con respaldo comprobable por cualquier revisor, que el motor
 reproduce los valores de referencia de la literatura.
+
+## Estructura de archivos: subir TODO
+
+La aplicación no arranca si falta cualquiera de estos archivos, y el síntoma es
+una **pantalla en gris sin mensaje de error**. Al publicar hay que subir la
+estructura completa, incluidas las subcarpetas:
+
+```
+index.html
+css/style.css
+js/data.js
+js/algorithm.js
+js/app.js
+js/i18n.js
+js/i18n/es.js      <- carpeta añadida en la v2.2
+js/i18n/en.js
+js/i18n/pt.js
+tests/validacion.js
+tests/humo.js
+```
+
+`index.html` carga los archivos por ruta relativa, así que reemplazar solo los
+sueltos y no subir la carpeta `js/i18n/` deja la aplicación sin arrancar.
+
+### Si aparece una pantalla en gris
+
+1. Abrir la consola del navegador con F12, pestaña «Console». El error aparece
+   ahí con el nombre del archivo que no cargó.
+2. Un error `404` indica que ese archivo no llegó al servidor: falta subirlo.
+3. Un error `is not defined` indica lo mismo, visto desde el otro lado: el
+   archivo que define ese nombre no cargó.
+4. Si la consola no muestra nada, suele ser caché del navegador: recargar con
+   Ctrl+Shift+R (Cmd+Shift+R en Mac).
+
 
 ## Estructura
 
