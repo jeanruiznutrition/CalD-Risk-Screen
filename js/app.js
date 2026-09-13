@@ -101,6 +101,22 @@ function App() {
     // microgramos, así que se convierte al calcular (1 mcg = 40 UI).
     const [suplementoVitD, setSuplementoVitD] = useState({ uiPorDia: '', diasPorSemana: 0, forma: 'D3' });
 
+    // --- Suplementos de entrenamiento (creatina y proteína en polvo) ---
+    // Variables de control/confusión para el estudio de validación: la
+    // creatina eleva la creatinina sérica/urinaria sin reflejar función
+    // renal, lo que puede distorsionar la razón calcio/creatinina urinaria;
+    // y tanto la creatina como la proteína en polvo pueden confundir la
+    // comparación de composición muscular (SARC-F) entre grupos dietéticos.
+    // No alimentan el motor CARDA: solo se registran para el análisis
+    // estadístico. Distinto del alimento "proteína en polvo" del FFQ de
+    // calcio (que mide su aporte de calcio como fuente dietética).
+    const [suplementosEntrenamiento, setSuplementosEntrenamiento] = useState({
+        creatina: false,
+        creatinaGramosDia: 5,
+        proteinaPolvoEntrenamiento: false,
+        proteinaPolvoEntrenamientoGramosDia: 20
+    });
+
     // --- Exposición solar (con fototipo, sin protector solar como variable) ---
     const [exposicionSolar, setExposicionSolar] = useState({
         diasPorSemana: 0,
@@ -257,6 +273,7 @@ function App() {
     const handleSarcFChange = (preguntaId, valor) => setRespuestasSarcF(prev => ({ ...prev, [preguntaId]: valor }));
     const handleSuplementoCalcioChange = (campo, valor) => setSuplementoCalcio(prev => ({ ...prev, [campo]: valor }));
     const handleSuplementoVitDChange = (campo, valor) => setSuplementoVitD(prev => ({ ...prev, [campo]: valor }));
+    const handleSuplementoEntrenamientoChange = (campo, valor) => setSuplementosEntrenamiento(prev => ({ ...prev, [campo]: valor }));
 
     // --- Cálculo reactivo de los módulos ---
     const suplementoCalcioActivo = useMemo(() => (
@@ -523,6 +540,10 @@ function App() {
         pantorrillaCm: perfil.circunferenciaPantorrilla,
         proteinaGkg: resultadoProteina.sinDatos ? '' : resultadoProteina.gPorKg,
         proteinaObjetivo: resultadoProteina.objetivo,
+        usaCreatina: suplementosEntrenamiento.creatina ? 1 : 0,
+        creatinaGramosDia: suplementosEntrenamiento.creatina ? suplementosEntrenamiento.creatinaGramosDia : '',
+        usaProteinaPolvoEntrenamiento: suplementosEntrenamiento.proteinaPolvoEntrenamiento ? 1 : 0,
+        proteinaPolvoEntrenamientoGramosDia: suplementosEntrenamiento.proteinaPolvoEntrenamiento ? suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia : '',
         labCalcioSerico: labCalcioSerico,
         lab25OHVitD: labVitaminaD,
         notas: (participante.notas || '').replace(/[;\r\n]/g, ' ')
@@ -575,7 +596,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.6\r\n";
+        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.7\r\n";
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -588,7 +609,9 @@ function App() {
         csv += "\r\nMODULO 3: RIESGO OSEO (orientativo)\r\n";
         csv += `Puntaje;${resultadoOseo.puntaje} / ${resultadoOseo.puntajeMaximo}\r\nCategoria;${resultadoOseo.categoria}\r\n\r\n`;
         csv += "MODULO 4: SARCOPENIA (SARC-F)\r\n";
-        csv += `Puntaje;${resultadoSarcopenia.puntajeTotal} / 10\r\nRiesgo probable;${resultadoSarcopenia.riesgoProbable ? 'SI' : 'NO'}\r\n\r\n`;
+        csv += `Puntaje;${resultadoSarcopenia.puntajeTotal} / 10\r\nRiesgo probable;${resultadoSarcopenia.riesgoProbable ? 'SI' : 'NO'}\r\n`;
+        csv += `Creatina (suplemento);${suplementosEntrenamiento.creatina ? `SI, ${suplementosEntrenamiento.creatinaGramosDia} g/dia` : 'NO'}\r\n`;
+        csv += `Proteina en polvo (suplemento de entrenamiento);${suplementosEntrenamiento.proteinaPolvoEntrenamiento ? `SI, ${suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia} g/dia` : 'NO'}\r\n\r\n`;
         csv += "Frecuencias Reportadas (FFQ Calcio):\r\nAlimento;Dias/Semana;Veces/Dia;Porciones;Calcio por Porcion (mg)\r\n";
         alimentosParaAlgoritmo.forEach(al => {
             csv += `${nombreAlimento(al)};${al.diasPorSemana};${al.vecesPorDia};${al.porcionesPorComida};${resolverCalcioPorcion(al) || al.calcioPorcion}\r\n`;
@@ -617,7 +640,7 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.6</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.7</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -936,6 +959,45 @@ function App() {
                                         </p>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* CARD: SUPLEMENTOS DE ENTRENAMIENTO (creatina y proteína en polvo) */}
+                        {/* Variables de control para el estudio, no alimentan el motor CARDA. */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-brand-600"></i> {t('training_supp_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('training_supp_desc')}</p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                        <input type="checkbox" checked={suplementosEntrenamiento.creatina}
+                                            onChange={(e) => handleSuplementoEntrenamientoChange('creatina', e.target.checked)}
+                                            class="rounded accent-brand-600" /> {t('training_supp_creatine')}
+                                    </label>
+                                    {suplementosEntrenamiento.creatina && (
+                                        <div class="flex items-center gap-2 mt-1 pl-6">
+                                            <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
+                                                onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                            <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                        <input type="checkbox" checked={suplementosEntrenamiento.proteinaPolvoEntrenamiento}
+                                            onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEntrenamiento', e.target.checked)}
+                                            class="rounded accent-brand-600" /> {t('training_supp_protein')}
+                                    </label>
+                                    {suplementosEntrenamiento.proteinaPolvoEntrenamiento && (
+                                        <div class="flex items-center gap-2 mt-1 pl-6">
+                                            <input type="number" min="0" step="1" value={suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia}
+                                                onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEntrenamientoGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                            <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -1658,7 +1720,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.6).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.7).</p>
                 </div>
 
             </main>

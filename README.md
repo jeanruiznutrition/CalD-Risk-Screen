@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v2.6)
+# CalD Risk Screen (CARDA v2.7)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -56,6 +56,22 @@ publicado con desviación menor al 5%.
   estaba al 8%.
 - **Eficiencia de absorción global** visible: revela cuánto del calcio ingerido
   se aprovecha realmente.
+
+## Novedades de la v2.7
+
+- **Suplementos de entrenamiento (creatina y proteína en polvo).** Nueva
+  tarjeta bajo la de suplementación de vitamina D: casilla de sí/no y dosis
+  diaria editable, con valores por defecto de 5 g (creatina) y 20 g
+  (proteína en polvo). Ninguno de los dos alimenta el motor CARDA; se
+  registran únicamente como variables de control para el estudio, porque la
+  creatina eleva la creatinina sérica/urinaria sin reflejar función renal
+  (pudiendo distorsionar la razón calcio/creatinina) y ambos pueden confundir
+  la comparación de composición muscular (SARC-F) entre los cuatro grupos
+  dietéticos. Se exportan como columnas nuevas en el CSV de registro
+  acumulado (`usaCreatina`, `creatinaGramosDia`, `usaProteinaPolvoEntrenamiento`,
+  `proteinaPolvoEntrenamientoGramosDia`). Distinto del alimento "proteína en
+  polvo" del cuestionario de calcio, que mide su aporte de calcio como fuente
+  dietética, no su uso como suplemento de entrenamiento.
 
 ## Novedades de la v2.6
 
