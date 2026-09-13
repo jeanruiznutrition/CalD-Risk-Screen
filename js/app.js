@@ -15,7 +15,8 @@ const nuevoAlimentoExtra = () => {
         nombrePersonalizado: '',
         diasPorSemana: 0,
         vecesPorDia: 1,
-        porcionesPorComida: 1.0
+        porcionesPorComida: 1.0,
+        etiquetaGenerica: true
     };
 };
 
@@ -77,7 +78,11 @@ function App() {
             diasPorSemana: 0,
             vecesPorDia: 1,
             porcionesPorComida: 1.0,
-            unidadSeleccionada: al.unidadSeleccionadaPorDefecto || null
+            unidadSeleccionada: al.unidadSeleccionadaPorDefecto || null,
+            // Por defecto se asume el valor genérico de mercado (data.js).
+            // Se desmarca cuando el participante trae foto de la etiqueta
+            // del producto y el valor queda confirmado o ajustado con ella.
+            etiquetaGenerica: true
         }))
     );
     const [alimentosExtra, setAlimentosExtra] = useState([]);
@@ -92,14 +97,15 @@ function App() {
         tipoId: 'ninguno',
         mgPorDia: 0,
         vecesPorDia: 1,
-        diasPorSemana: 7
+        diasPorSemana: 7,
+        etiquetaGenerica: true
     });
 
     // --- FFQ de fuentes de vitamina D + suplementación ---
     // La dosis se captura en unidades internacionales porque es la unidad
     // que aparece en las etiquetas de los suplementos. El motor trabaja en
     // microgramos, así que se convierte al calcular (1 mcg = 40 UI).
-    const [suplementoVitD, setSuplementoVitD] = useState({ uiPorDia: '', diasPorSemana: 0, forma: 'D3' });
+    const [suplementoVitD, setSuplementoVitD] = useState({ uiPorDia: '', diasPorSemana: 0, forma: 'D3', etiquetaGenerica: true });
 
     // --- Suplementos de entrenamiento (creatina y proteína en polvo) ---
     // Variables de control/confusión para el estudio de validación: la
@@ -113,8 +119,16 @@ function App() {
     const [suplementosEntrenamiento, setSuplementosEntrenamiento] = useState({
         creatina: false,
         creatinaGramosDia: 5,
-        proteinaPolvoEntrenamiento: false,
-        proteinaPolvoEntrenamientoGramosDia: 20
+        creatinaEtiquetaGenerica: true,
+        // La proteína en polvo se registra con el mismo nivel de detalle que
+        // un alimento del FFQ (tipo, días/semana, veces/día, gramos por
+        // porción), porque su composición varía mucho según el tipo/marca.
+        usaProteinaPolvo: false,
+        proteinaPolvoTipo: 'whey_concentrada',
+        proteinaPolvoDiasPorSemana: 0,
+        proteinaPolvoVecesPorDia: 1,
+        proteinaPolvoGramosPorcion: 20,
+        proteinaPolvoEtiquetaGenerica: true
     });
 
     // --- Exposición solar (con fototipo, sin protector solar como variable) ---
@@ -517,6 +531,7 @@ function App() {
         bajoUmbral525: resultadosCalcio.bajoUmbralEpicOxford ? 1 : 0,
         suplementoTipo: suplementoCalcio.tipoId,
         suplementoMgDia: suplementoCalcio.mgPorDia,
+        calcioSupGenerico: suplementoCalcio.tipoId !== 'ninguno' ? (suplementoCalcio.etiquetaGenerica !== false ? 1 : 0) : '',
         usaIBP: modificadores.usaIBP ? 1 : 0,
         nivelSodio: modificadores.nivelSodio,
         tazasCafeDia: modificadores.tazasCafeDia,
@@ -525,6 +540,7 @@ function App() {
         vitDSuplMcgDia: resultadoVitDDieta.suplEq,
         vitDTotalMcgDia: resultadoVitDDieta.totalEq,
         vitDCategoria: resultadoVitDDieta.categoria,
+        vitDSupGenerico: suplementoVitD.forma !== 'ninguna' ? (suplementoVitD.etiquetaGenerica !== false ? 1 : 0) : '',
         fototipo: exposicionSolar.fototipo,
         solarDiasSemana: exposicionSolar.diasPorSemana,
         solarMinutosSesion: exposicionSolar.minutosPorSesion,
@@ -542,8 +558,15 @@ function App() {
         proteinaObjetivo: resultadoProteina.objetivo,
         usaCreatina: suplementosEntrenamiento.creatina ? 1 : 0,
         creatinaGramosDia: suplementosEntrenamiento.creatina ? suplementosEntrenamiento.creatinaGramosDia : '',
-        usaProteinaPolvoEntrenamiento: suplementosEntrenamiento.proteinaPolvoEntrenamiento ? 1 : 0,
-        proteinaPolvoEntrenamientoGramosDia: suplementosEntrenamiento.proteinaPolvoEntrenamiento ? suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia : '',
+        creatinaSupGenerico: suplementosEntrenamiento.creatina ? (suplementosEntrenamiento.creatinaEtiquetaGenerica !== false ? 1 : 0) : '',
+        usaProteinaPolvoEntrenamiento: suplementosEntrenamiento.usaProteinaPolvo ? 1 : 0,
+        proteinaPolvoEntrenamientoTipo: suplementosEntrenamiento.usaProteinaPolvo ? suplementosEntrenamiento.proteinaPolvoTipo : '',
+        proteinaPolvoEntrenamientoDiasSemana: suplementosEntrenamiento.usaProteinaPolvo ? suplementosEntrenamiento.proteinaPolvoDiasPorSemana : '',
+        proteinaPolvoEntrenamientoVecesDia: suplementosEntrenamiento.usaProteinaPolvo ? suplementosEntrenamiento.proteinaPolvoVecesPorDia : '',
+        proteinaPolvoEntrenamientoGramosPorcion: suplementosEntrenamiento.usaProteinaPolvo ? suplementosEntrenamiento.proteinaPolvoGramosPorcion : '',
+        proteinaPolvoEntrenamientoSupGenerico: suplementosEntrenamiento.usaProteinaPolvo ? (suplementosEntrenamiento.proteinaPolvoEtiquetaGenerica !== false ? 1 : 0) : '',
+        alimentosConsumidosTotal: alimentosParaAlgoritmo.filter(al => Number(al.diasPorSemana) > 0).length,
+        alimentosVerificadosConEtiqueta: alimentosParaAlgoritmo.filter(al => Number(al.diasPorSemana) > 0 && al.etiquetaGenerica === false).length,
         labCalcioSerico: labCalcioSerico,
         lab25OHVitD: labVitaminaD,
         notas: (participante.notas || '').replace(/[;\r\n]/g, ' ')
@@ -596,7 +619,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.7\r\n";
+        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.8\r\n";
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -610,11 +633,14 @@ function App() {
         csv += `Puntaje;${resultadoOseo.puntaje} / ${resultadoOseo.puntajeMaximo}\r\nCategoria;${resultadoOseo.categoria}\r\n\r\n`;
         csv += "MODULO 4: SARCOPENIA (SARC-F)\r\n";
         csv += `Puntaje;${resultadoSarcopenia.puntajeTotal} / 10\r\nRiesgo probable;${resultadoSarcopenia.riesgoProbable ? 'SI' : 'NO'}\r\n`;
-        csv += `Creatina (suplemento);${suplementosEntrenamiento.creatina ? `SI, ${suplementosEntrenamiento.creatinaGramosDia} g/dia` : 'NO'}\r\n`;
-        csv += `Proteina en polvo (suplemento de entrenamiento);${suplementosEntrenamiento.proteinaPolvoEntrenamiento ? `SI, ${suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia} g/dia` : 'NO'}\r\n\r\n`;
-        csv += "Frecuencias Reportadas (FFQ Calcio):\r\nAlimento;Dias/Semana;Veces/Dia;Porciones;Calcio por Porcion (mg)\r\n";
+        csv += `Creatina (suplemento);${suplementosEntrenamiento.creatina ? `SI, ${suplementosEntrenamiento.creatinaGramosDia} g/dia (${suplementosEntrenamiento.creatinaEtiquetaGenerica !== false ? 'Generico' : 'Verificado con etiqueta'})` : 'NO'}\r\n`;
+        csv += `Proteina en polvo (suplemento);${suplementosEntrenamiento.usaProteinaPolvo ? `SI, ${t('protein_type_' + suplementosEntrenamiento.proteinaPolvoTipo)}, ${suplementosEntrenamiento.proteinaPolvoDiasPorSemana}d/sem x ${suplementosEntrenamiento.proteinaPolvoVecesPorDia}/dia x ${suplementosEntrenamiento.proteinaPolvoGramosPorcion} g/porcion (${suplementosEntrenamiento.proteinaPolvoEtiquetaGenerica !== false ? 'Generico' : 'Verificado con etiqueta'})` : 'NO'}\r\n\r\n`;
+        csv += `Suplemento de calcio;${suplementoCalcio.tipoId !== 'ninguno' ? `${suplementoCalcio.tipoId} (${suplementoCalcio.etiquetaGenerica !== false ? 'Generico' : 'Verificado con etiqueta'})` : 'NO'}\r\n`;
+        csv += `Suplemento de vitamina D;${suplementoVitD.forma !== 'ninguna' ? `${suplementoVitD.forma} (${suplementoVitD.etiquetaGenerica !== false ? 'Generico' : 'Verificado con etiqueta'})` : 'NO'}\r\n\r\n`;
+        csv += "Frecuencias Reportadas (FFQ Calcio):\r\nAlimento;Dias/Semana;Veces/Dia;Porciones;Calcio por Porcion (mg);Fuente del Dato\r\n";
         alimentosParaAlgoritmo.forEach(al => {
-            csv += `${nombreAlimento(al)};${al.diasPorSemana};${al.vecesPorDia};${al.porcionesPorComida};${resolverCalcioPorcion(al) || al.calcioPorcion}\r\n`;
+            const fuente = al.diasPorSemana > 0 ? (al.etiquetaGenerica !== false ? 'Generico' : 'Verificado con etiqueta') : '';
+            csv += `${nombreAlimento(al)};${al.diasPorSemana};${al.vecesPorDia};${al.porcionesPorComida};${resolverCalcioPorcion(al) || al.calcioPorcion};${fuente}\r\n`;
         });
 
         const encodedUri = encodeURI(csv);
@@ -640,7 +666,7 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.7</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.8</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -873,6 +899,14 @@ function App() {
                                 {suplementoCalcio.tipoId === 'citrato' && (
                                     <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{t('supp_citrate_note')}</p>
                                 )}
+                                {suplementoCalcio.tipoId !== 'ninguno' && (
+                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                        <input type="checkbox" checked={suplementoCalcio.etiquetaGenerica !== false}
+                                            onChange={(e) => handleSuplementoCalcioChange('etiquetaGenerica', e.target.checked)}
+                                            class="rounded accent-brand-600" />
+                                        {t('ffq_generic_label')}
+                                    </label>
+                                )}
 
                                 <div class="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800">
                                     <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('modifiers_title')}</h4>
@@ -959,6 +993,14 @@ function App() {
                                         </p>
                                     </div>
                                 )}
+                                {suplementoVitD.forma !== 'ninguna' && (
+                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                        <input type="checkbox" checked={suplementoVitD.etiquetaGenerica !== false}
+                                            onChange={(e) => handleSuplementoVitDChange('etiquetaGenerica', e.target.checked)}
+                                            class="rounded accent-brand-600" />
+                                        {t('ffq_generic_label')}
+                                    </label>
+                                )}
                             </div>
                         </div>
 
@@ -975,26 +1017,78 @@ function App() {
                                             class="rounded accent-brand-600" /> {t('training_supp_creatine')}
                                     </label>
                                     {suplementosEntrenamiento.creatina && (
-                                        <div class="flex items-center gap-2 mt-1 pl-6">
-                                            <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
-                                                onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
-                                            <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                        <div class="pl-6">
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                    class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                                <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                            </div>
+                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                                <input type="checkbox" checked={suplementosEntrenamiento.creatinaEtiquetaGenerica !== false}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaEtiquetaGenerica', e.target.checked)}
+                                                    class="rounded accent-brand-600" />
+                                                {t('ffq_generic_label')}
+                                            </label>
                                         </div>
                                     )}
                                 </div>
                                 <div>
                                     <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                                        <input type="checkbox" checked={suplementosEntrenamiento.proteinaPolvoEntrenamiento}
-                                            onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEntrenamiento', e.target.checked)}
+                                        <input type="checkbox" checked={suplementosEntrenamiento.usaProteinaPolvo}
+                                            onChange={(e) => handleSuplementoEntrenamientoChange('usaProteinaPolvo', e.target.checked)}
                                             class="rounded accent-brand-600" /> {t('training_supp_protein')}
                                     </label>
-                                    {suplementosEntrenamiento.proteinaPolvoEntrenamiento && (
-                                        <div class="flex items-center gap-2 mt-1 pl-6">
-                                            <input type="number" min="0" step="1" value={suplementosEntrenamiento.proteinaPolvoEntrenamientoGramosDia}
-                                                onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEntrenamientoGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
-                                            <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                    {suplementosEntrenamiento.usaProteinaPolvo && (
+                                        <div class="pl-6 space-y-2 mt-1">
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_protein_type')}</label>
+                                                <select value={suplementosEntrenamiento.proteinaPolvoTipo}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoTipo', e.target.value)}
+                                                    class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+                                                    <option value="whey_hidrolizada">{t('protein_type_whey_hidrolizada')}</option>
+                                                    <option value="whey_aislada">{t('protein_type_whey_aislada')}</option>
+                                                    <option value="whey_concentrada">{t('protein_type_whey_concentrada')}</option>
+                                                    <option value="caseina">{t('protein_type_caseina')}</option>
+                                                    <option value="huevo">{t('protein_type_huevo')}</option>
+                                                    <option value="carne">{t('protein_type_carne')}</option>
+                                                    <option value="soja">{t('protein_type_soja')}</option>
+                                                    <option value="chicharo">{t('protein_type_chicharo')}</option>
+                                                    <option value="mix_vegetal">{t('protein_type_mix_vegetal')}</option>
+                                                </select>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_days_week')}</label>
+                                                    <select value={suplementosEntrenamiento.proteinaPolvoDiasPorSemana}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoDiasPorSemana', parseInt(e.target.value))}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                        <option value={0}>{t('ffq_no_consume')}</option>
+                                                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_times_day')}</label>
+                                                    <select value={suplementosEntrenamiento.proteinaPolvoVecesPorDia}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoVecesPorDia', parseInt(e.target.value))}
+                                                        disabled={suplementosEntrenamiento.proteinaPolvoDiasPorSemana === 0}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                        {[1,2,3].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_grams_portion')}</label>
+                                                    <input type="number" min="0" step="1" value={suplementosEntrenamiento.proteinaPolvoGramosPorcion}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoGramosPorcion', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                                </div>
+                                            </div>
+                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                                <input type="checkbox" checked={suplementosEntrenamiento.proteinaPolvoEtiquetaGenerica !== false}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEtiquetaGenerica', e.target.checked)}
+                                                    class="rounded accent-brand-600" />
+                                                {t('ffq_generic_label')}
+                                            </label>
                                         </div>
                                     )}
                                 </div>
@@ -1154,6 +1248,12 @@ function App() {
                                                                         class="w-full text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-1 font-semibold text-slate-800 dark:text-slate-100" />
                                                                 </div>
                                                             </div>
+                                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                                                <input type="checkbox" checked={al.etiquetaGenerica !== false}
+                                                                    onChange={(e) => handleAlimentoChange(al.id, 'etiquetaGenerica', e.target.checked)}
+                                                                    class="rounded accent-brand-600" />
+                                                                {t('ffq_generic_label')}
+                                                            </label>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1229,6 +1329,12 @@ function App() {
                                                                 <option value="D2">{t('vitd_form_d2')}</option>
                                                             </select>
                                                         </div>
+                                                        <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                                            <input type="checkbox" checked={al.etiquetaGenerica !== false}
+                                                                onChange={(e) => handleAlimentoExtraChange(al.id, 'etiquetaGenerica', e.target.checked)}
+                                                                class="rounded accent-brand-600" />
+                                                            {t('ffq_generic_label')}
+                                                        </label>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1720,7 +1826,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.7).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.8).</p>
                 </div>
 
             </main>

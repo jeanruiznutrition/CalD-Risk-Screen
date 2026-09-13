@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v2.7)
+# CalD Risk Screen (CARDA v2.8)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -57,6 +57,38 @@ publicado con desviación menor al 5%.
 - **Eficiencia de absorción global** visible: revela cuánto del calcio ingerido
   se aprovecha realmente.
 
+## Novedades de la v2.8
+
+- **Trazabilidad genérico/verificado por etiqueta.** Se le puede pedir al
+  participante que el día de la entrevista lleve fotos de la tabla
+  nutricional de los suplementos que consume, de la leche y de otros
+  alimentos de interés, para afinar los datos del algoritmo. Cada alimento
+  del FFQ (estándar y "otros alimentos"), y cada suplemento (calcio,
+  vitamina D, creatina, proteína en polvo), tiene ahora una casilla
+  "Dato genérico (mercado panameño)", marcada por defecto, que se desmarca
+  cuando el valor quedó confirmado o ajustado con la foto de la etiqueta del
+  producto que trajo el participante (en vez del valor genérico investigado
+  por el equipo del estudio). Esto queda señalado al exportar:
+  - En el CSV de registro acumulado: `calcioSupGenerico`, `vitDSupGenerico`,
+    `creatinaSupGenerico`, `proteinaPolvoEntrenamientoSupGenerico`,
+    `alimentosConsumidosTotal` y `alimentosVerificadosConEtiqueta` (conteo de
+    alimentos consumidos cuyo dato fue verificado con foto).
+  - En el reporte individual (CSV de `exportarExcel`): una columna "Fuente
+    del Dato" (Genérico/Verificado con etiqueta) en la tabla de frecuencias
+    del FFQ, y la misma anotación junto a cada suplemento.
+- **Proteína en polvo con el mismo nivel de detalle que un alimento del FFQ.**
+  Se eliminó la etiqueta "de entrenamiento" (la proteína en polvo no es
+  exclusiva del entrenamiento) y, en vez de pedir solo gramos/día, ahora se
+  pregunta: tipo de proteína (suero de leche hidrolizada/aislada/concentrada,
+  caseína, huevo, carne, soja, chícharo, mezcla vegetal), días/semana,
+  veces/día y gramos por porción (20 g por defecto, editable). La creatina
+  se mantiene como dosis simple en g/día (5 g por defecto), por ser un
+  compuesto único sin variación relevante de composición por marca. Se
+  exportan como columnas nuevas: `proteinaPolvoEntrenamientoTipo`,
+  `proteinaPolvoEntrenamientoDiasSemana`, `proteinaPolvoEntrenamientoVecesDia`,
+  `proteinaPolvoEntrenamientoGramosPorcion` (reemplazan la columna única
+  `proteinaPolvoEntrenamientoGramosDia` de la v2.7).
+
 ## Novedades de la v2.7
 
 - **Suplementos de entrenamiento (creatina y proteína en polvo).** Nueva
@@ -69,7 +101,8 @@ publicado con desviación menor al 5%.
   la comparación de composición muscular (SARC-F) entre los cuatro grupos
   dietéticos. Se exportan como columnas nuevas en el CSV de registro
   acumulado (`usaCreatina`, `creatinaGramosDia`, `usaProteinaPolvoEntrenamiento`,
-  `proteinaPolvoEntrenamientoGramosDia`). Distinto del alimento "proteína en
+  `proteinaPolvoEntrenamientoGramosDia` — este último campo fue reemplazado
+  en la v2.8, ver arriba). Distinto del alimento "proteína en
   polvo" del cuestionario de calcio, que mide su aporte de calcio como fuente
   dietética, no su uso como suplemento de entrenamiento.
 
