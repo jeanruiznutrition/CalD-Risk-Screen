@@ -619,7 +619,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v2.8\r\n";
+        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v3.0\r\n";
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -657,7 +657,7 @@ function App() {
         <div class="min-h-screen flex flex-col">
 
             {/* --- ENCABEZADO --- */}
-            <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm sticky top-0 z-50 no-print">
+            <header class="glass-header sticky top-0 z-50 no-print">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-600/20 text-white">
@@ -666,7 +666,7 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v2.8</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v3.0</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -873,7 +873,7 @@ function App() {
                                     </select>
                                 </div>
                                 {suplementoCalcio.tipoId !== 'ninguno' && (
-                                    <div class="grid grid-cols-3 gap-2">
+                                    <div class="apple-reveal grid grid-cols-3 gap-2">
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_mg_day')}</label>
                                             <input type="number" min="0" step="50" value={suplementoCalcio.mgPorDia}
@@ -958,7 +958,7 @@ function App() {
                                 </div>
 
                                 {suplementoVitD.forma !== 'ninguna' && (
-                                    <div class="grid grid-cols-2 gap-3">
+                                    <div class="apple-reveal grid grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('vitd_supp_ui_day')}</label>
                                             <input type="text" inputMode="decimal" placeholder={t('vitd_supp_ui_placeholder')} value={suplementoVitD.uiPorDia}
@@ -1017,7 +1017,7 @@ function App() {
                                             class="rounded accent-brand-600" /> {t('training_supp_creatine')}
                                     </label>
                                     {suplementosEntrenamiento.creatina && (
-                                        <div class="pl-6">
+                                        <div class="apple-reveal pl-6">
                                             <div class="flex items-center gap-2 mt-1">
                                                 <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
                                                     onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
@@ -1040,7 +1040,7 @@ function App() {
                                             class="rounded accent-brand-600" /> {t('training_supp_protein')}
                                     </label>
                                     {suplementosEntrenamiento.usaProteinaPolvo && (
-                                        <div class="pl-6 space-y-2 mt-1">
+                                        <div class="apple-reveal pl-6 space-y-2 mt-1">
                                             <div>
                                                 <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_protein_type')}</label>
                                                 <select value={suplementosEntrenamiento.proteinaPolvoTipo}
@@ -1826,7 +1826,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v2.8).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v3.0).</p>
                 </div>
 
             </main>

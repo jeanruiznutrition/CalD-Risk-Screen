@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v2.8)
+# CalD Risk Screen (CARDA v3.0)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -56,6 +56,51 @@ publicado con desviación menor al 5%.
   estaba al 8%.
 - **Eficiencia de absorción global** visible: revela cuánto del calcio ingerido
   se aprovecha realmente.
+
+## Novedades de la v3.0
+
+- **Rediseño visual "Apple-style".** Se aplicó la guía de diseño de interfaz
+  de Apple (motion/materiales/tipografía de las charlas WWDC "Designing
+  Fluid Interfaces" y "Principles of Great Design") mediante un rediseño de
+  `css/style.css` que no toca la lógica de `app.js` (las 85 pruebas de
+  `validacion.js` y la de `humo.js` siguen pasando igual). Cambios:
+  - **Tipografía del sistema:** se reemplazó la fuente externa (Google
+    Fonts "Plus Jakarta Sans") por la pila de fuentes del sistema
+    (`-apple-system`/San Francisco y sus equivalentes en cada plataforma),
+    con tracking negativo en títulos grandes y positivo en las etiquetas
+    pequeñas en mayúsculas.
+  - **Encabezado traslúcido:** la barra superior ahora es un panel de
+    vidrio (`backdrop-filter: blur` + fondo semitransparente) bajo el que
+    se desliza el contenido, en vez de una barra opaca con borde duro.
+  - **Interruptores tipo iOS:** las casillas de decisión principal (fuma,
+    alcohol, IBP, toma creatina, toma proteína en polvo) ahora son
+    interruptores deslizantes con el color de marca, en vez de checkboxes
+    planos. Las casillas de procedencia del dato ("genérico"/"verificado
+    con etiqueta", texto de 9px) quedan como una casilla mínima con marca
+    de verificación para no competir visualmente con el texto.
+  - **Retroalimentación al presionar:** todos los botones responden con
+    una leve reducción de escala en el instante de presionar (no al
+    soltar), con una curva de movimiento tipo resorte crítico en vez de
+    una duración lineal fija.
+  - **Materiales de las tarjetas:** sombra suave y estratificada en vez de
+    una sombra plana, para dar sensación de profundidad sin bordes duros.
+  - **Aparición de paneles ("materializar"):** los detalles que se
+    despliegan al activar un suplemento (calcio, vitamina D, creatina,
+    proteína en polvo) entran con un leve desplazamiento + desvanecido en
+    vez de aparecer de golpe.
+  - **Accesibilidad de movimiento:** se respetan `prefers-reduced-motion`
+    (transiciones cortas y sin rebote), `prefers-reduced-transparency`
+    (encabezado sólido en vez de vidrio) y `prefers-contrast: more`
+    (bordes más marcados en vez de sombra).
+  - **Modo oscuro:** los controles nativos (flecha de los `<select>`,
+    barras de desplazamiento) ahora usan `color-scheme` para adoptar la
+    paleta oscura automáticamente.
+  - **Fuera de alcance de esta versión, a propósito:** el planificador
+    semanal de arrastrar y soltar sigue usando la API nativa de HTML5
+    Drag & Drop tal como estaba; convertirlo a seguimiento 1:1 con
+    Pointer Events (con física de resorte y proyección de impulso, como
+    describe la guía de Apple para gestos) es un cambio de mayor riesgo
+    que se dejó pendiente para cuando Jean quiera abordarlo específicamente.
 
 ## Novedades de la v2.8
 
