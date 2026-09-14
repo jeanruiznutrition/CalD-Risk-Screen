@@ -91,11 +91,22 @@ body {
        visionOS — dan vida al lienzo neutro sin competir con el
        contenido, que sigue siendo tarjetas blancas/oscuras opacas. */
     background-image:
-        radial-gradient(720px 480px at 6% -8%, rgba(255, 149, 0, 0.10), transparent 60%),
-        radial-gradient(760px 520px at 108% 8%, rgba(0, 122, 255, 0.09), transparent 60%),
-        radial-gradient(640px 520px at 50% 115%, rgba(175, 82, 222, 0.07), transparent 60%);
+        radial-gradient(720px 480px at 6% -8%, rgba(255, 149, 0, 0.045), transparent 60%),
+        radial-gradient(760px 520px at 108% 8%, rgba(0, 122, 255, 0.04), transparent 60%),
+        radial-gradient(640px 520px at 50% 115%, rgba(175, 82, 222, 0.03), transparent 60%);
     background-attachment: fixed;
     background-repeat: no-repeat;
+}
+/* El lienzo de la página en sí (no los campos ni paneles internos,
+   que siguen usando slate-50/100 para conservar su contraste sutil
+   contra las tarjetas blancas) se lleva un blanco casi puro — el
+   selector repite la clase de Tailwind para ganarle en especificidad
+   sin depender del orden de las hojas de estilo. */
+body.bg-slate-50 {
+    background-color: #FEFEFE;
+}
+:root.dark body.dark\:bg-slate-950 {
+    background-color: #000000;
 }
 :root.dark body {
     background-image:
