@@ -1,4 +1,4 @@
-# CalD Risk Screen (CARDA v3.0)
+# CalD Risk Screen (CARDA v3.1)
 
 Herramienta de tamizaje determinística, basada en navegador y sin backend, que
 estima riesgo de insuficiencia de calcio y vitamina D, riesgo óseo orientativo
@@ -56,6 +56,89 @@ publicado con desviación menor al 5%.
   estaba al 8%.
 - **Eficiencia de absorción global** visible: revela cuánto del calcio ingerido
   se aprovecha realmente.
+
+## Novedades de la v3.1
+
+- **Paleta recalibrada a los colores de sistema reales de Apple** (Human
+  Interface Guidelines, System Colors + System Gray Palette de iOS/iPadOS 18
+  y macOS Sequoia), en vez de la paleta Tailwind genérica que se seguía usando
+  desde el rediseño "Apple-style" de la v3.0. El cambio se hizo por completo
+  en la configuración de color de Tailwind dentro de `index.html`: como
+  `app.js` ya usaba nombres de color coherentes en todo el marcado (`slate`,
+  `blue`, `rose`, `amber`, `emerald`, `teal`, `brand`), redefinir esos mismos
+  nombres retiñe la interfaz entera sin tocar una sola línea de JSX ni de
+  lógica. Las 85 pruebas de `validacion.js` y la de `humo.js` siguen pasando
+  igual.
+  - **Acento de marca → System Orange** (`#FF9500` claro / `#FF9F0A` oscuro),
+    sustituyendo al ámbar genérico anterior.
+  - **Gris neutro → System Gray 1–6** en vez del slate azulado por defecto de
+    Tailwind: fondo agrupado `#F5F5F7`/`#F2F2F7` en claro, negro verdadero
+    `#000000` en oscuro (como Apple Música o Salud en modo oscuro), con toda
+    la escala intermedia calibrada para que cada borde siga siendo visible
+    sobre su superficie.
+  - **Riesgo alto → System Red** (`#FF3B30`/`#FF453A`), **riesgo moderado /
+    avisos → System Yellow** (`#FFCC00`/`#FFD60A`), **riesgo bajo → System
+    Green** (`#34C759`/`#30D158`), **información → System Blue**
+    (`#007AFF`/`#0A84FF`). Antes las cuatro categorías de color no
+    correspondían a ningún color de Apple real.
+- **Materiales y profundidad reales**: sombras estratificadas de dos capas
+  (contacto + elevación) en vez de una sombra plana, con un realce interior
+  de 1px que imita el borde de cristal de una tarjeta translúcida; la tarjeta
+  destacada de identificación del participante recibe una elevación mayor,
+  como una "hero card".
+  - **Botones "filled" y "tinted"** al estilo `UIButton.Configuration`:
+    los botones de acción primaria llevan una sombra de contacto teñida con
+    su propio color (naranja, verde), y los "tinted" (accesos del
+    encabezado) llevan un realce interior sutil que simula material
+    translúcido en vez de un color plano.
+  - **Interruptores** con la sombra de la perilla y las proporciones de un
+    `UISwitch` real; la casilla de procedencia del dato pasa a System Blue
+    al marcarse, en vez de compartir el naranja de marca.
+  - **Foco de teclado** con halo de acento suave (`box-shadow` con difusión),
+    coherente con el anillo de foco de macOS Sequoia, en vez del contorno
+    azul plano del navegador.
+  - **Campos de formulario**: fondo que aclara a blanco/negro puro al
+    enfocar, con borde del color de acento; flecha de `<select>` redibujada
+    a mano en System Gray en vez del triángulo nativo del navegador.
+  - **Detalles de sistema**: color de selección de texto con el tinte de la
+    app, barra de desplazamiento delgada en System Gray, favicon propio (un
+    hueso minimalista sobre lienzo redondeado en System Orange), y
+    `theme-color` de claro/oscuro para que la barra del navegador adopte el
+    tono correcto.
+- **`prefers-contrast: more` reforzado**: en este modo la pista de los
+  interruptores apagados pasa a System Gray sólido (en vez de depender solo
+  del borde), para que "apagado" nunca dependa de una diferencia de matiz
+  sutil.
+- **Ronda de vitalidad cromática** (ajuste posterior dentro de la misma v3.1,
+  a pedido de Jean: la primera pasada quedó demasiado neutra). Cada tarjeta
+  principal recibió su propio color de sección, como en Apple Salud o las
+  filas de Ajustes, en vez de que todo dependiera del único naranja de marca:
+  - Se ampliaron los colores de sistema disponibles con **System Indigo,
+    Purple, Pink y Cyan**, además de los ya existentes.
+  - **Insignias de icono automáticas**: el icono de cada encabezado de
+    tarjeta (`<h3>`/`<h4>`) recibe un halo de fondo calculado con
+    `color-mix(in srgb, currentColor …)` a partir de su propio color de
+    texto — un solo lugar en CSS, cualquier color de sección "simplemente
+    funciona" sin tener que escribir una clase de fondo por icono.
+  - **Logotipo del encabezado con gradiente** (`#FFB340 → #FF9500 → #FF6A00`),
+    como el icono de una app de Apple, en vez de un naranja plano.
+  - **"Bloom" de color de fondo**: manchas de color muy suaves y fijas
+    (naranja, azul, morado) detrás del contenido, al estilo de las páginas
+    de producto de Apple.com o de visionOS — el lienzo neutro deja de verse
+    plano sin competir con las tarjetas, que siguen siendo opacas.
+  - **Resplandor de color a juego en las tarjetas de riesgo**: además de la
+    sombra de contacto neutra, una segunda sombra difusa tintada con el
+    color semántico de la tarjeta (verde/ámbar/rojo), como las tarjetas
+    destacadas de la App Store o Wallet.
+  - Los verdes y turquesas de texto (`emerald-600/700`, `teal-600/700`) se
+    volvieron a calibrar más saturados, ya que la primera pasada los había
+    oscurecido para contraste hasta un punto apagado.
+- **Fuera de alcance de esta versión, a propósito** (idéntico a lo señalado
+  en la v3.0): el planificador semanal de arrastrar y soltar sigue usando la
+  API nativa de HTML5 Drag & Drop, y no se simulan "continuous corners"
+  (esquinas superelípticas) porque requerirían `clip-path`/SVG por tarjeta
+  sin aportar una diferencia perceptible frente al `border-radius` estándar
+  ya usado.
 
 ## Novedades de la v3.0
 

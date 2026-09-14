@@ -619,7 +619,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v3.0\r\n";
+        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v3.1\r\n";
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -666,7 +666,7 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v3.0</span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v3.1</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -715,7 +715,7 @@ function App() {
 
                         {/* CARD: IDENTIFICACIÓN DEL PARTICIPANTE Y REGISTRO */}
                         <div class="bg-white dark:bg-slate-900 border-2 border-brand-300 dark:border-brand-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-id-card text-brand-600"></i> {t('registry_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-id-card text-indigo-600 dark:text-indigo-400"></i> {t('registry_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('registry_desc')}</p>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
@@ -764,7 +764,7 @@ function App() {
 
                         {/* CARD: PERFIL */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="fa-solid fa-user text-brand-600"></i> {t('profile_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="fa-solid fa-user text-blue-600 dark:text-blue-400"></i> {t('profile_title')}</h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('profile_age')}</label>
@@ -819,7 +819,7 @@ function App() {
 
                         {/* CARD: EJERCICIO */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-brand-600"></i> {t('exercise_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-emerald-600 dark:text-emerald-400"></i> {t('exercise_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('exercise_desc')}</p>
                             <div class="space-y-3">
                                 <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
@@ -859,7 +859,7 @@ function App() {
 
                         {/* CARD: SUPLEMENTACIÓN DE CALCIO */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-pills text-brand-600"></i> {t('supp_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-pills text-teal-600 dark:text-teal-400"></i> {t('supp_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('supp_desc')}</p>
                             <div class="space-y-3">
                                 <div>
@@ -944,7 +944,7 @@ function App() {
 
                         {/* CARD: SUPLEMENTACIÓN DE VITAMINA D */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-capsules text-brand-600"></i> {t('vitd_supp_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-capsules text-amber-600 dark:text-amber-400"></i> {t('vitd_supp_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('vitd_supp_desc')}</p>
 
                             <div class="space-y-3">
@@ -1007,7 +1007,7 @@ function App() {
                         {/* CARD: SUPLEMENTOS DE ENTRENAMIENTO (creatina y proteína en polvo) */}
                         {/* Variables de control para el estudio, no alimentan el motor CARDA. */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-brand-600"></i> {t('training_supp_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-purple-600 dark:text-purple-400"></i> {t('training_supp_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('training_supp_desc')}</p>
                             <div class="space-y-3">
                                 <div>
@@ -1097,7 +1097,7 @@ function App() {
 
                         {/* CARD: EXPOSICIÓN SOLAR */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-sun text-brand-600"></i> {t('solar_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-sun text-amber-600 dark:text-amber-400"></i> {t('solar_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('solar_desc')}</p>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
@@ -1148,7 +1148,7 @@ function App() {
 
                         {/* CARD: SARC-F */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-person-walking text-brand-600"></i> {t('sarcf_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-person-walking text-pink-600 dark:text-pink-400"></i> {t('sarcf_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('sarcf_desc')}</p>
                             <div class="space-y-4">
                                 {PREGUNTAS_SARC_F.map(pregunta => (
@@ -1167,7 +1167,7 @@ function App() {
 
                         {/* CARD: CUESTIONARIO ÚNICO DE FRECUENCIA DE CONSUMO */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-utensils text-brand-600"></i> {t('ffq_unified_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-utensils text-cyan-600 dark:text-cyan-400"></i> {t('ffq_unified_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('ffq_unified_subtitle')}</p>
 
                             {GRUPOS_ALIMENTOS.map(grupo => {
@@ -1448,7 +1448,7 @@ function App() {
                         {/* COMPARACIÓN DE MARCOS DE REFERENCIA */}
                         {(
                             <div class="bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-900 rounded-2xl p-5 shadow-sm">
-                                <h4 class="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-brand-600"></i> {t('frameworks_title')}</h4>
+                                <h4 class="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-indigo-600 dark:text-indigo-400"></i> {t('frameworks_title')}</h4>
 
                                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">{t('frameworks_intro')}</p>
 
@@ -1540,7 +1540,7 @@ function App() {
 
                         {/* SECCIÓN FINAL: VITAMINA D (solar + dieta/suplemento) */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="fa-solid fa-sun text-brand-600"></i> {t('vitd_section_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="fa-solid fa-sun text-amber-600 dark:text-amber-400"></i> {t('vitd_section_title')}</h3>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div class={`border p-4 rounded-xl ${infoSolar.color}`}>
                                     <span class="text-[10px] font-bold uppercase tracking-wider opacity-75">{t('solar_standard_title')}</span>
@@ -1578,7 +1578,7 @@ function App() {
 
                         {/* INTERPRETACIÓN DE LABORATORIO */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-flask text-brand-600"></i> {t('lab_section_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-flask text-blue-600 dark:text-blue-400"></i> {t('lab_section_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('lab_section_desc')}</p>
                             <div class="mb-4 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
                                 <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('vitd_framework_label')}</label>
@@ -1639,7 +1639,7 @@ function App() {
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                             <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-calendar-week text-brand-600"></i> {t('week_reconstructed_title')}</h3>
+                                    <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2"><i class="fa-solid fa-calendar-week text-purple-600 dark:text-purple-400"></i> {t('week_reconstructed_title')}</h3>
                                     <p class="text-[10px] text-slate-400 mt-1">{t('week_reconstructed_desc')}</p>
                                 </div>
                                 {Object.keys(manualOverrides).length > 0 && (
@@ -1710,7 +1710,7 @@ function App() {
 
                         {/* METODOLOGÍA */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-brand-600"></i> {t('methodology_section_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-teal-600 dark:text-teal-400"></i> {t('methodology_section_title')}</h3>
                             <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 <p><strong>{t('methodology_step1_title')}</strong> {t('methodology_step1_desc')}</p>
                                 <p><strong>{t('methodology_step2_title')}</strong> {t('methodology_step2_desc')}</p>
@@ -1724,7 +1724,7 @@ function App() {
 
                         {/* BIBLIOGRAFÍA */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-book text-brand-600"></i> {t('bibliography_title')}</h3>
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fa-solid fa-book text-pink-600 dark:text-pink-400"></i> {t('bibliography_title')}</h3>
                             <ol class="list-decimal list-inside space-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                                 <li>{t('bib_1')}</li>
                                 <li>{t('bib_2')}</li>
@@ -1826,7 +1826,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v3.0).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v3.1).</p>
                 </div>
 
             </main>
