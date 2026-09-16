@@ -519,7 +519,7 @@ bib_11: 'Upper-end thresholds: NIH Office of Dietary Supplements, Vitamin D Heal
 
     footer_author: 'Developed by',
     footer_specialist: 'Registered Dietitian-Nutritionist specialised in plant-based nutrition. Deterministic screening tool for research use.',
-    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. All rights reserved. CalD Risk Screen (CARDA v2.6) — Panama.',
+    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. All rights reserved. CalD Risk Screen (CARDA v{v}) — Panama.',
 
     // ============================================================
     // NEW KEYS IN v6.0

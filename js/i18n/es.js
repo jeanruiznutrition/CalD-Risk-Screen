@@ -535,7 +535,7 @@ bib_11: 'Umbrales del extremo superior: NIH Office of Dietary Supplements, Vitam
 
     footer_author: 'Desarrollado por',
     footer_specialist: 'Nutricionista-Dietista especializado en nutrición basada en plantas. Herramienta de tamizaje determinística para uso en investigación.',
-    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v1.1) — Panamá.',
+    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v{v}) — Panamá.',
 
     // ============================================================
     // CLAVES NUEVAS DE LA v6.0

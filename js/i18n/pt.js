@@ -489,7 +489,7 @@ bib_11: 'Limiares do extremo superior: NIH Office of Dietary Supplements, Vitami
 
     footer_author: 'Desenvolvido por',
     footer_specialist: 'Nutricionista-Dietista especializado em nutrição baseada em plantas. Ferramenta de rastreio determinística para uso em investigação.',
-    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos os direitos reservados. CalD Risk Screen (CARDA v2.6) — Panamá.',
+    footer_license_panama: '© 2026 Jean Carlos Ruiz Mosley. Todos os direitos reservados. CalD Risk Screen (CARDA v{v}) — Panamá.',
 
     // ============================================================
     // CHAVES NOVAS DA v6.0

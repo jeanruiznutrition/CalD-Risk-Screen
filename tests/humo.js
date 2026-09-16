@@ -374,6 +374,45 @@ try {
     advertencias.push('No se pudieron verificar las claves de traducción: ' + e.message);
 }
 
+// NINGÚN NÚMERO DE VERSIÓN ESCRITO A MANO EN TEXTO VISIBLE.
+// Esta comprobación existe por un fallo real: la v6.0 se publicó con la
+// insignia del encabezado anunciando «CARDA v3.1», porque la versión
+// estaba escrita como literal en cuatro sitios distintos —el encabezado,
+// el informe exportado, la hoja del participante y las tres tablas de
+// traducción— y cada uno se había quedado en un número diferente (v1.1,
+// v2.6, v3.1). Todos derivan ahora de CARDA_VERSION; esto impide que
+// alguien vuelva a escribirlo a mano.
+try {
+    const versionReal = new Function(
+        fs.readFileSync(path.join(rutaJs, 'data.js'), 'utf8') + '; return CARDA_VERSION;'
+    )();
+    const literales = [];
+    // En el JSX: CARDA v seguido de un dígito es un literal; la forma
+    // correcta es CARDA v{CARDA_VERSION}.
+    [['js/app.js', fuenteApp], ['js/ui-panels.js', fuentePaneles],
+     ['js/i18n/es.js', fs.readFileSync(path.join(rutaJs, 'i18n', 'es.js'), 'utf8')],
+     ['js/i18n/en.js', fs.readFileSync(path.join(rutaJs, 'i18n', 'en.js'), 'utf8')],
+     ['js/i18n/pt.js', fs.readFileSync(path.join(rutaJs, 'i18n', 'pt.js'), 'utf8')]
+    ].forEach(([nombre, texto]) => {
+        texto.split('\n').forEach((linea, i) => {
+            // Se ignoran los comentarios: ahí las referencias históricas
+            // («hasta la v3.1 se restaba…») son legítimas y necesarias.
+            const sinComentario = linea.replace(/\/\/.*$/, '').replace(/\/\*[\s\S]*?\*\//g, '');
+            const m = sinComentario.match(/CARDA[ -]v(\d+\.\d+)/);
+            if (m && m[1] !== versionReal) {
+                literales.push(`${nombre}:${i + 1} anuncia la v${m[1]} en vez de la v${versionReal}`);
+            }
+        });
+    });
+    if (literales.length) {
+        errores.push(new Error('Versión escrita a mano en texto visible: ' + literales.join(' · ')));
+    } else {
+        advertencias.push(`VERSION_OK:${versionReal}`);
+    }
+} catch (e) {
+    advertencias.push('No se pudo verificar la coherencia de la versión: ' + e.message);
+}
+
 // El diccionario de datos tiene que cubrir todos los campos que se
 // exportan. Sin esta comprobación el diccionario se queda obsoleto en la
 // primera versión que añada una columna.
@@ -412,6 +451,10 @@ if (errores.length === 0) {
     if (panelesProbados) {
         console.log(`  ${VERDE}✓${FIN} Los ${panelesProbados} componentes de ui-panels.js se renderizan sin errores`);
     }
+    const okVersion = advertencias.find(a => a.startsWith('VERSION_OK:'));
+    if (okVersion) {
+        console.log(`  ${VERDE}✓${FIN} Todo texto visible anuncia la versión v${okVersion.split(':')[1]} del motor`);
+    }
     const okArchivos = advertencias.find(a => a.startsWith('ARCHIVOS_OK:'));
     if (okArchivos) console.log(`  ${VERDE}✓${FIN} Los ${okArchivos.split(':')[1]} archivos que index.html carga existen`);
 } else {
@@ -429,13 +472,13 @@ if (errores.length === 0) {
     });
 }
 
-advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:')).forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
+advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:')).forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
 
 if (errores.length > 0) {
     console.log(`\n${ROJO}${NEGRITA}La aplicación fallaría al cargar.${FIN}\n`);
     process.exit(1);
 }
-if (advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:')).length > 0) {
+if (advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:')).length > 0) {
     console.log(`\n${AMARILLO}Se ejecuta, pero hay advertencias que revisar.${FIN}\n`);
     process.exit(0);
 }

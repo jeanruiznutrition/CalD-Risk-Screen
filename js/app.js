@@ -934,7 +934,7 @@ function App() {
 
     const exportarExcel = () => {
         let csv = "data:text/csv;charset=utf-8,";
-        csv += "CalD Risk Screen - Resultados del Algoritmo CARDA v3.1\r\n";
+        csv += `CalD Risk Screen - Resultados del Algoritmo ${CARDA_SELLO}\r\n`;
         csv += "(C) 2026 Jean Carlos Ruiz Mosley - Todos los derechos reservados\r\n";
         csv += `Patron Dietetico;${perfil.grupoEstudio}\r\nEdad;${perfil.edad}\r\nSexo;${perfil.sexo}\r\n\r\n`;
         csv += "MODULO 1: CALCIO\r\n";
@@ -983,7 +983,14 @@ function App() {
                         <div>
                             <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
                                 CalD Risk Screen
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v3.1</span>
+                                {/* La versión NUNCA se escribe a mano aquí. Hasta la v6.0 había cuatro
+    literales distintos repartidos por el código y las traducciones
+    (v1.1, v2.6, v3.1), de modo que la insignia del encabezado seguía
+    anunciando la v3.1 con el motor de la v6.0 ya cargado. Todos
+    derivan ahora de CARDA_VERSION, y tests/humo.js falla si alguien
+    vuelve a escribir un número de versión a mano. */}
+                                <span title={CARDA_SELLO}
+                                    class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">CARDA v{CARDA_VERSION}</span>
                             </h1>
                             <p class="text-xs text-slate-500 dark:text-slate-400">{t('app_subtitle')}</p>
                         </div>
@@ -2462,7 +2469,7 @@ function App() {
                             <li>• {t('pdf_bullet_vitd').replace('{val}', infoVitDDieta.clasificacion)}</li>
                         </ul>
                     </div>
-                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v3.1).</p>
+                    <p class="pt-4 border-t border-slate-200 text-[10px] text-slate-400 text-center">© 2026 Jean Carlos Ruiz Mosley. Todos los derechos reservados. CalD Risk Screen (CARDA v{CARDA_VERSION}).</p>
                 </div>
 
             </main>
@@ -2473,7 +2480,7 @@ function App() {
                         <p class="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider text-[10px]">{t('footer_author')}</p>
                         <p class="font-bold text-brand-600 dark:text-brand-400 text-sm">MEd Jean Carlos Ruiz Mosley</p>
                         <p class="text-slate-600 dark:text-slate-300 leading-relaxed">{t('footer_specialist')}</p>
-                        <p class="text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200/50 dark:border-slate-800/50 mt-2">{t('footer_license_panama')}</p>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-200/50 dark:border-slate-800/50 mt-2">{t('footer_license_panama').replace('{v}', CARDA_VERSION)}</p>
                     </div>
                 </div>
             </footer>
