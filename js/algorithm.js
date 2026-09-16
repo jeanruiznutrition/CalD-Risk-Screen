@@ -1562,3 +1562,200 @@ const calcularRiesgoOseoV6 = (entradaConductual, bioquimica = null) => {
         grado: 'heuristico'
     };
 };
+
+
+// ------------------------------------------------------------
+// 16. CONCLUSIÓN Y CONDUCTA SUGERIDA
+// ------------------------------------------------------------
+// POR QUÉ EXISTE ESTA FUNCIÓN
+//
+// Hasta ahora la herramienta devolvía categorías por nutriente
+// ('optima', 'limitrofe', 'baja'…) y alertas sueltas, y dejaba al
+// profesional la tarea de integrarlas. Eso está bien para un informe
+// técnico y mal para el propósito declarado del instrumento: decidir si
+// hace falta modificar el patrón alimentario o evaluar suplementación.
+// Esta función emite ESA conclusión, de forma explícita, y también
+// cuando la respuesta es que no hace falta hacer nada: confirmar que
+// alguien sí cubre su requerimiento es un resultado, no la ausencia de
+// una alerta.
+//
+// LO QUE ESTA FUNCIÓN NO HACE, Y NO DEBE HACER NUNCA
+//
+// No indica dosis. Recomendar «tome 1000 UI» exigiría haber demostrado
+// en un ensayo clínico que esa dosis alcanza la concentración objetivo
+// en esta población, y eso no es lo que valida un cuestionario de
+// frecuencia. El reparto correcto es: la herramienta cuantifica la
+// brecha, y la dosis la decide el nutricionista o el médico. Por eso la
+// conducta sugerida termina siempre en una derivación cuando hay brecha,
+// y por eso cada salida lleva su descargo.
+//
+// LA ASIMETRÍA ENTRE LOS DOS NUTRIENTES ES DELIBERADA
+//
+// El calcio de una dieta basada en plantas SÍ es alcanzable por vía
+// dietética: entre las bebidas vegetales fortificadas, el tofu cuajado
+// con sales de calcio, el tahini y las verduras de bajo oxalato hay
+// margen suficiente, y la suplementación de calcio tiene riesgos propios
+// (hipercalciuria, interacción con inhibidores de la bomba de protones).
+// Así que ante una brecha de calcio lo primero es el ajuste del patrón,
+// y la suplementación es la segunda opción.
+//
+// La vitamina D no funciona así: en una dieta 100 % vegetal, sin
+// alimentos fortificados ni suplemento, alcanzar la ingesta de
+// referencia por vía dietética es prácticamente imposible, y la síntesis
+// cutánea es variable y depende de factores que el participante no
+// controla. Ante una brecha de vitamina D, la vía realista es la
+// suplementación, y la conducta es derivar para que se establezca la
+// dosis.
+//
+// EL BIOMARCADOR MANDA SOBRE LA ESTIMACIÓN
+//
+// Si hay una 25-hidroxivitamina D sérica declarada, ese valor tiene
+// precedencia sobre cualquier estimación del cuestionario: es el estado
+// real del participante, mientras que la estimación es un modelo. Una
+// herramienta que mantuviera su propia conclusión frente a un
+// biomarcador que la contradice no sería defendible.
+
+// Los tres cortes de decisión viven en data.js y están declarados en el
+// registro de parámetros con grado HEURÍSTICO, porque determinan qué se
+// le dice al participante y por tanto el estudio debe calibrarlos contra
+// la 25-hidroxivitamina D sérica y el registro dietético de referencia.
+
+const generarConductaSugerida = ({
+    razonCalcioNeta,
+    resultadoVitDDieta,
+    resultadoSolar,
+    panelBioquimico,
+    usaIBP,
+    esDietaVegetal
+}) => {
+    const conclusiones = [];
+
+    // ------------------------------------------------------------
+    // CALCIO
+    // ------------------------------------------------------------
+    const razonCa = Number(razonCalcioNeta);
+    const tieneRazonCa = !isNaN(razonCa);
+
+    // Circunstancias que obligan a que la decisión sea profesional,
+    // con independencia de la magnitud de la brecha.
+    const modificadoresCalcio = [];
+    if (usaIBP) modificadoresCalcio.push('ibp');
+    const uCa = panelBioquimico && panelBioquimico.analitos && panelBioquimico.analitos.calcioUrinario;
+    if (uCa && uCa.disponible && uCa.hipercalciuria) modificadoresCalcio.push('hipercalciuria');
+    const tfge = panelBioquimico && panelBioquimico.analitos && panelBioquimico.analitos.tfge;
+    if (tfge && tfge.disponible && Number(tfge.valor) < 60) modificadoresCalcio.push('funcion_renal');
+
+    let calcio;
+    if (!tieneRazonCa) {
+        calcio = { nutriente: 'calcio', estado: 'sin_datos', via: 'completar_cuestionario', derivar: false };
+    } else if (razonCa >= CONDUCTA_CALCIO_CUBRE) {
+        calcio = { nutriente: 'calcio', estado: 'cubre', via: 'mantener', derivar: false };
+    } else if (razonCa >= CONDUCTA_CALCIO_LIMITE) {
+        calcio = { nutriente: 'calcio', estado: 'limite', via: 'ajuste_dietetico', derivar: false };
+    } else if (razonCa >= CONDUCTA_CALCIO_DIETA_VIABLE) {
+        calcio = { nutriente: 'calcio', estado: 'no_cubre', via: 'ajuste_dietetico_primero', derivar: true };
+    } else {
+        calcio = { nutriente: 'calcio', estado: 'no_cubre', via: 'ajuste_dietetico_y_evaluar_suplemento', derivar: true };
+    }
+    // La hipercalciuria y la función renal reducida convierten cualquier
+    // decisión sobre suplementación de calcio en una decisión clínica:
+    // suplementar puede empeorar el cuadro.
+    if (modificadoresCalcio.indexOf('hipercalciuria') >= 0 || modificadoresCalcio.indexOf('funcion_renal') >= 0) {
+        calcio.derivar = true;
+        calcio.motivoDerivacionKey = 'conduct_ca_referral_clinical';
+    } else if (modificadoresCalcio.indexOf('ibp') >= 0 && calcio.estado !== 'cubre') {
+        calcio.derivar = true;
+        calcio.motivoDerivacionKey = 'conduct_ca_referral_ppi';
+    }
+    calcio.modificadores = modificadoresCalcio;
+    calcio.razon = tieneRazonCa ? Math.round(razonCa * 10) / 10 : null;
+    conclusiones.push(calcio);
+
+    // ------------------------------------------------------------
+    // VITAMINA D
+    // ------------------------------------------------------------
+    // La cantidad comparable con la ingesta de referencia es dieta más
+    // suplemento, porque esa referencia se derivó suponiendo exposición
+    // solar mínima. La síntesis cutánea se usa como CONTEXTO —puede
+    // explicar por qué alguien con ingesta baja tiene un estado sérico
+    // normal— pero no como sustituto de la ingesta en la comparación.
+    const ingestaD = resultadoVitDDieta ? Number(resultadoVitDDieta.totalEq) || 0 : 0;
+    const metaD = resultadoVitDDieta ? Number(resultadoVitDDieta.meta) || 0 : 0;
+    const razonD = metaD > 0 ? (ingestaD / metaD) * 100 : null;
+    const uiCutanea = resultadoSolar ? Number(resultadoSolar.uiPromedioDia) || 0 : 0;
+    const solRelevante = uiCutanea >= (metaD * UI_POR_MCG_VITAMINA_D * 0.4);
+
+    // Biomarcador, si existe: tiene precedencia sobre la estimación.
+    const bioD = panelBioquimico && panelBioquimico.analitos && panelBioquimico.analitos.vitd;
+    const hayBioD = !!(bioD && bioD.valor !== null && bioD.valor !== undefined && bioD.categoria);
+
+    let vitd;
+    if (hayBioD) {
+        const cat = bioD.categoria;
+        if (cat === 'deficiente') {
+            vitd = { nutriente: 'vitamina_d', estado: 'no_cubre', via: 'evaluar_suplementacion',
+                     derivar: true, base: 'biomarcador', motivoDerivacionKey: 'conduct_d_referral_deficient' };
+        } else if (cat === 'insuficiente') {
+            vitd = { nutriente: 'vitamina_d', estado: 'limite', via: 'evaluar_suplementacion',
+                     derivar: true, base: 'biomarcador', motivoDerivacionKey: 'conduct_d_referral_insufficient' };
+        } else if (cat === 'por_encima' || bioD.porEncimaDelRango || bioD.toxicidadProbable) {
+            vitd = { nutriente: 'vitamina_d', estado: 'exceso', via: 'revisar_suplementacion',
+                     derivar: true, base: 'biomarcador', motivoDerivacionKey: 'conduct_d_referral_excess' };
+        } else {
+            vitd = { nutriente: 'vitamina_d', estado: 'cubre', via: 'mantener',
+                     derivar: false, base: 'biomarcador' };
+        }
+    } else if (razonD === null) {
+        vitd = { nutriente: 'vitamina_d', estado: 'sin_datos', via: 'completar_cuestionario', derivar: false, base: 'estimacion' };
+    } else if (razonD >= 100) {
+        vitd = { nutriente: 'vitamina_d', estado: 'cubre', via: 'mantener', derivar: false, base: 'estimacion' };
+    } else if (solRelevante) {
+        // Ingesta por debajo de la referencia pero con síntesis cutánea
+        // apreciable: la estimación no puede resolverlo, y el dato que lo
+        // resuelve es la 25-hidroxivitamina D sérica. Se pide, no se
+        // concluye.
+        vitd = { nutriente: 'vitamina_d', estado: 'indeterminado', via: 'medir_25ohd',
+                 derivar: true, base: 'estimacion', motivoDerivacionKey: 'conduct_d_referral_measure' };
+    } else {
+        vitd = { nutriente: 'vitamina_d', estado: 'no_cubre', via: 'evaluar_suplementacion',
+                 derivar: true, base: 'estimacion', motivoDerivacionKey: 'conduct_d_referral_gap' };
+    }
+    vitd.razon = razonD !== null ? Math.round(razonD * 10) / 10 : null;
+    vitd.ingesta = ingestaD;
+    vitd.meta = metaD;
+    vitd.uiCutanea = Math.round(uiCutanea);
+    vitd.sinAlimentosFortificados = !!esDietaVegetal && ingestaD < 2;
+    conclusiones.push(vitd);
+
+    // ------------------------------------------------------------
+    // VEREDICTO GLOBAL
+    // ------------------------------------------------------------
+    const nivelBio = panelBioquimico ? panelBioquimico.nivelDerivacion : 'sin_hallazgos';
+    const hayHallazgoBioquimico = nivelBio === 'derivacion' || nivelBio === 'derivacion_urgente';
+
+    let veredicto, colorKey;
+    if (hayHallazgoBioquimico) {
+        veredicto = 'derivar_prioritario'; colorKey = 'rose';
+    } else if (conclusiones.some(c => c.derivar)) {
+        veredicto = 'derivar_evaluar_suplementacion'; colorKey = 'amber';
+    } else if (conclusiones.some(c => c.estado === 'limite')) {
+        veredicto = 'ajuste_dietetico'; colorKey = 'amber';
+    } else if (conclusiones.every(c => c.estado === 'cubre')) {
+        veredicto = 'cubre_ambos'; colorKey = 'emerald';
+    } else {
+        veredicto = 'datos_incompletos'; colorKey = 'slate';
+    }
+
+    return {
+        veredicto,
+        colorKey,
+        conclusiones,
+        calcio,
+        vitd,
+        requiereDerivacion: conclusiones.some(c => c.derivar) || hayHallazgoBioquimico,
+        hallazgoBioquimico: hayHallazgoBioquimico,
+        nivelBioquimico: nivelBio,
+        // Descargo que acompaña SIEMPRE a esta salida, cubra o no cubra.
+        descargoKey: 'conduct_no_dose_disclaimer'
+    };
+};

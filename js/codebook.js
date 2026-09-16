@@ -235,6 +235,29 @@ const DICCIONARIO_DATOS = [
     { campo: 'riesgoOseoCategoria', etiqueta: 'Categoría de riesgo óseo', tipo: 'categorico', origen: 'calculado',
       codificacion: 'bajo | moderado | alto' },
 
+    // --- Conclusión y conducta sugerida ---
+    // Son la salida que responde al propósito del instrumento, así que se
+    // exportan: permiten contar cuántos participantes se derivaron y por
+    // qué, y contrastar esa decisión contra el patrón de oro.
+    { campo: 'conductaVeredicto', etiqueta: 'Veredicto global de la conducta sugerida', tipo: 'categorico', origen: 'calculado',
+      codificacion: { cubre_ambos: 'Cubre calcio y vitamina D', ajuste_dietetico: 'Al límite, revisar patrón',
+                      derivar_evaluar_suplementacion: 'Derivar para evaluar suplementación',
+                      derivar_prioritario: 'Hallazgo bioquímico, evaluación médica previa',
+                      datos_incompletos: 'Datos insuficientes' } },
+    { campo: 'conductaCalcioEstado', etiqueta: 'Estado de adecuación de calcio', tipo: 'categorico', origen: 'calculado',
+      codificacion: { cubre: 'Cubre el requerimiento', limite: 'Al límite', no_cubre: 'No cubre', sin_datos: 'Sin datos' } },
+    { campo: 'conductaCalcioVia', etiqueta: 'Conducta sugerida para calcio', tipo: 'categorico', origen: 'calculado',
+      nota: 'La suplementación de calcio es la segunda opción tras el ajuste dietético, porque en dietas basadas en plantas la meta es alcanzable con alimentos y suplementar tiene riesgos propios.' },
+    { campo: 'conductaVitDEstado', etiqueta: 'Estado de adecuación de vitamina D', tipo: 'categorico', origen: 'calculado',
+      codificacion: { cubre: 'Cubre el requerimiento', limite: 'Al límite', no_cubre: 'No cubre',
+                      indeterminado: 'No resoluble con la estimación', exceso: 'Por encima del rango', sin_datos: 'Sin datos' } },
+    { campo: 'conductaVitDVia', etiqueta: 'Conducta sugerida para vitamina D', tipo: 'categorico', origen: 'calculado' },
+    { campo: 'conductaVitDBase', etiqueta: 'Base de la conclusión de vitamina D', tipo: 'categorico', origen: 'calculado',
+      codificacion: { biomarcador: '25-hidroxivitamina D sérica', estimacion: 'Estimación del cuestionario' },
+      nota: 'Cuando hay valor sérico declarado, tiene precedencia sobre la estimación del cuestionario.' },
+    { campo: 'conductaRequiereDerivacion', etiqueta: 'Requiere derivación a nutricionista o médico', tipo: 'logico', origen: 'calculado',
+      codificacion: { '1': 'Sí', '0': 'No' } },
+
     { campo: 'notas', etiqueta: 'Notas del evaluador', tipo: 'texto', origen: 'capturado',
       nota: 'Los puntos y coma y los saltos de línea se sustituyen por espacios para no romper el CSV.' }
 ];

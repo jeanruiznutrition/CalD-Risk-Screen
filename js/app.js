@@ -574,6 +574,20 @@ function App() {
         imc: datosIMC.imc
     }), [respuestasSarcF, perfil, ejercicio.diasFuerzaSemana, datosIMC.imc, resultadoProteina.categoria]);
 
+    // CONCLUSIÓN Y CONDUCTA SUGERIDA. Es la respuesta a la pregunta para
+    // la que existe la herramienta, y va primero en los resultados. El
+    // panel bioquímico entra porque un valor sérico tiene precedencia
+    // sobre cualquier estimación del cuestionario.
+    const conducta = useMemo(() => generarConductaSugerida({
+        razonCalcioNeta: razonSegunMarco,
+        resultadoVitDDieta,
+        resultadoSolar: resultadoSolarEstandar,
+        panelBioquimico,
+        usaIBP: modificadores.usaIBP,
+        esDietaVegetal: perfil.grupoEstudio === 'Vegano' || perfil.grupoEstudio === 'Vegetariano'
+    }), [razonSegunMarco, resultadoVitDDieta, resultadoSolarEstandar, panelBioquimico,
+         modificadores.usaIBP, perfil.grupoEstudio]);
+
     // Plausibilidad del cuestionario (v6.0). No descarta al participante:
     // lo marca, y la decisión de excluir queda en el análisis.
     const plausibilidad = useMemo(
@@ -840,6 +854,13 @@ function App() {
         oraiSuperaCorte: resultadoORAI.aplicable ? (resultadoORAI.superaCorte ? 1 : 0) : '',
         riesgoOseoPuntaje: resultadoOseo.puntaje,
         riesgoOseoMaximo: resultadoOseo.puntajeMaximo,
+        conductaVeredicto: conducta.veredicto,
+        conductaCalcioEstado: conducta.calcio.estado,
+        conductaCalcioVia: conducta.calcio.via,
+        conductaVitDEstado: conducta.vitd.estado,
+        conductaVitDVia: conducta.vitd.via,
+        conductaVitDBase: conducta.vitd.base || '',
+        conductaRequiereDerivacion: conducta.requiereDerivacion ? 1 : 0,
         riesgoOseoFraccion: resultadoOseo.fraccionDelMaximo,
         riesgoOseoCategoria: resultadoOseo.categoria,
 
@@ -2022,6 +2043,70 @@ function App() {
                             )}
                             <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('plaus_note')}</p>
                             </div>
+                        </div>
+
+                        {/* CONCLUSIÓN Y CONDUCTA SUGERIDA */}
+                        {/* Va inmediatamente después de la calidad del dato y antes de
+                            cualquier cifra, porque es lo que el profesional necesita
+                            leer primero: si cubre o no, y qué corresponde hacer. */}
+                        <div class={'rounded-2xl border-2 p-6 ' + (
+                            conducta.colorKey === 'emerald' ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/25'
+                            : conducta.colorKey === 'rose' ? 'border-rose-300 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/25'
+                            : conducta.colorKey === 'amber' ? 'border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/25'
+                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900')}>
+                            <h3 class="font-bold text-sm uppercase tracking-wider mb-1 flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                                <i class={'fa-solid ' + (conducta.colorKey === 'emerald' ? 'fa-circle-check text-emerald-600'
+                                    : conducta.colorKey === 'rose' ? 'fa-triangle-exclamation text-rose-600'
+                                    : conducta.colorKey === 'amber' ? 'fa-circle-exclamation text-amber-600'
+                                    : 'fa-circle-question text-slate-500')}></i>
+                                {t('conduct_title')}
+                            </h3>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">{t('conduct_intro')}</p>
+
+                            {/* Veredicto en una frase */}
+                            <p class="text-base font-extrabold leading-snug text-slate-900 dark:text-white mb-4">
+                                {t('conduct_verdict_' + conducta.veredicto)}
+                            </p>
+
+                            {/* Un bloque por nutriente */}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {conducta.conclusiones.map(c => (
+                                    <div key={c.nutriente} class="rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4">
+                                        <div class="flex items-baseline justify-between gap-2 mb-1">
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t('conduct_nutrient_' + c.nutriente)}</span>
+                                            {c.razon !== null && (
+                                                <span class="text-sm font-extrabold text-slate-700 dark:text-slate-200">{c.razon}<span class="text-[10px]">%</span></span>
+                                            )}
+                                        </div>
+                                        <p class={'text-sm font-bold leading-tight mb-1.5 ' + (
+                                            c.estado === 'cubre' ? 'text-emerald-700 dark:text-emerald-400'
+                                            : c.estado === 'limite' || c.estado === 'indeterminado' ? 'text-amber-700 dark:text-amber-400'
+                                            : c.estado === 'sin_datos' ? 'text-slate-500'
+                                            : 'text-rose-700 dark:text-rose-400')}>
+                                            {t('conduct_state_' + c.estado)}
+                                        </p>
+                                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">{t('conduct_via_' + c.via)}</p>
+                                        {c.motivoDerivacionKey && (
+                                            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                                                {t(c.motivoDerivacionKey)}
+                                            </p>
+                                        )}
+                                        {c.sinAlimentosFortificados && (
+                                            <p class="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed mt-1.5 font-semibold">{t('conduct_no_fortified_note')}</p>
+                                        )}
+                                        {c.base && (
+                                            <p class="text-[9px] text-slate-400 mt-1.5 italic">
+                                                {t(c.base === 'biomarcador' ? 'conduct_based_on_biomarker' : 'conduct_based_on_estimate')}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Descargo: acompaña siempre a esta salida, cubra o no cubra */}
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+                                <i class="fa-solid fa-circle-info mr-1"></i>{t('conduct_no_dose_disclaimer')}
+                            </p>
                         </div>
 
                         {/* DASHBOARD DE MÉTRICAS — CALCIO */}

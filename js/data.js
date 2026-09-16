@@ -1361,6 +1361,20 @@ const CATEGORIAS_IMC = [
 // en curso debe calibrar. La herramienta los enumera sola: no hay que
 // buscarlos en el código.
 
+// ------------------------------------------------------------
+// Cortes de decisión de la conducta sugerida
+// ------------------------------------------------------------
+// Deciden qué se le dice al participante: si mantiene su patrón, si lo
+// ajusta, o si se le deriva para evaluar suplementación. Son de CRIBADO
+// y grado heurístico declarado: el estudio de validación debe calibrarlos
+// contra la 25-hidroxivitamina D sérica y el método dietético de
+// referencia. Van en el registro de parámetros, de modo que la huella del
+// modelo cambia si alguien los mueve y las filas exportadas antes y
+// después quedan distinguibles.
+const CONDUCTA_CALCIO_CUBRE = 100;       // % de la meta absorbida: cubre
+const CONDUCTA_CALCIO_LIMITE = 75;       // por debajo: brecha real
+const CONDUCTA_CALCIO_DIETA_VIABLE = 50; // por debajo: la dieta sola difícilmente basta
+
 const CARDA_VERSION = '6.0';
 
 const REGISTRO_PARAMETROS = [
@@ -1486,7 +1500,15 @@ const REGISTRO_PARAMETROS = [
     { clave: 'RIESGO_OSEO_CORTE_ALTO', valor: 5, unidad: 'puntos', grado: 'heuristico',
       fuente: 'CALIBRACIÓN PENDIENTE contra T-score de DXA del estudio en curso' },
     { clave: 'PLAUSIBILIDAD_PROTEINA_FRACCION_MINIMA', valor: PLAUSIBILIDAD_PROTEINA_FRACCION_MINIMA, unidad: 'fracción del objetivo', grado: 'heuristico',
-      fuente: 'Lógica de los puntos de corte de Goldberg (Goldberg GR et al. Eur J Clin Nutr 1991;45:569) aplicada a proteína' }
+      fuente: 'Lógica de los puntos de corte de Goldberg (Goldberg GR et al. Eur J Clin Nutr 1991;45:569) aplicada a proteína' },
+
+    // --- Cortes de decisión de la conducta sugerida ---
+    { clave: 'CONDUCTA_CALCIO_CUBRE', valor: CONDUCTA_CALCIO_CUBRE, unidad: '% de la meta absorbida', grado: 'heuristico',
+      fuente: 'Corte de cribado propio: 100% de la meta derivada de la ingesta de referencia. Pendiente de calibrar contra el método dietético de referencia' },
+    { clave: 'CONDUCTA_CALCIO_LIMITE', valor: CONDUCTA_CALCIO_LIMITE, unidad: '% de la meta absorbida', grado: 'heuristico',
+      fuente: 'Corte de cribado propio que separa la brecha cerrable con alimentos de la que requiere derivación. Pendiente de calibración' },
+    { clave: 'CONDUCTA_CALCIO_DIETA_VIABLE', valor: CONDUCTA_CALCIO_DIETA_VIABLE, unidad: '% de la meta absorbida', grado: 'heuristico',
+      fuente: 'Corte de cribado propio por debajo del cual el ajuste dietético aislado difícilmente basta en una dieta basada en plantas. Pendiente de calibración' }
 ];
 
 // Huella determinista del conjunto de parámetros (FNV-1a de 32 bits sobre

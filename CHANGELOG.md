@@ -2,7 +2,7 @@
 
 ## v6.0 — motor CARDA v6.0
 
-Sello del motor de esta versión: `CARDA-v6.0+2e78524e`
+Sello del motor de esta versión: `CARDA-v6.0+7f6a3d8b`
 
 Cada fila exportada lleva ahora ese sello. La parte tras el `+` es una
 huella determinista del conjunto completo de parámetros del modelo: si
@@ -288,6 +288,60 @@ Piezas concretas:
   creatina el módulo señala que la filtración estimada queda
   **subestimada** y la razón calcio/creatinina **infraestimada**.
 
+### B1b. Conclusión y conducta sugerida
+
+**El hueco que cerraba.** La herramienta devolvía categorías por
+nutriente y alertas sueltas, y dejaba al profesional la tarea de
+integrarlas en una decisión. Para un informe técnico está bien; para el
+propósito declarado del instrumento —decidir si hace falta modificar el
+patrón alimentario o evaluar suplementación— no, porque la conclusión
+nunca se enunciaba.
+
+**Qué devuelve ahora.** Un veredicto en una frase y un bloque por
+nutriente con tres piezas: el estado (cubre, al límite, no cubre,
+indeterminado), la conducta que corresponde, y el motivo de la
+derivación cuando la hay. Y lo hace **también cuando la respuesta es que
+no hace falta hacer nada**: confirmar que alguien sí cubre su
+requerimiento es un resultado, no la ausencia de una alerta.
+
+**La asimetría entre los dos nutrientes es deliberada.** El calcio de una
+dieta basada en plantas es alcanzable por vía dietética —entre bebidas
+vegetales fortificadas, tofu cuajado con sales de calcio, tahini y
+verduras de bajo oxalato hay margen—, y suplementarlo tiene riesgos
+propios, así que ante una brecha de calcio lo primero es el ajuste del
+patrón y la suplementación es la segunda opción. La vitamina D no
+funciona así: en una dieta 100 % vegetal sin alimentos fortificados ni
+suplemento, alcanzar la ingesta de referencia por vía dietética es
+prácticamente imposible, así que ante una brecha la vía realista es la
+suplementación y la conducta es derivar.
+
+**El biomarcador manda sobre la estimación.** Si hay una
+25-hidroxivitamina D sérica declarada, ese valor tiene precedencia sobre
+lo que estime el cuestionario, y en las dos direcciones: un valor
+suficiente con ingesta estimada baja concluye que cubre, y un valor
+deficiente con ingesta estimada alta concluye que no. Una herramienta que
+mantuviera su propia conclusión frente a un biomarcador que la contradice
+no sería defendible. La salida declara sobre qué se decidió.
+
+**Lo que no hace.** No indica dosis, y no debe. Recomendar una cantidad
+concreta exigiría haber demostrado en un ensayo clínico que esa dosis
+alcanza la concentración objetivo en esta población, y eso no es lo que
+valida un cuestionario de frecuencia. El reparto es: la herramienta
+cuantifica la brecha, el nutricionista o el médico establecen la dosis.
+El descargo acompaña a la salida siempre, cubra o no cubra, y la suite lo
+comprueba.
+
+**Caso que conviene conocer.** Cuando la ingesta de vitamina D queda por
+debajo de la referencia pero la síntesis cutánea estimada es apreciable,
+la herramienta **no concluye**: declara el estado indeterminado y pide la
+25-hidroxivitamina D sérica. La razón es que la ingesta de referencia se
+derivó suponiendo exposición solar mínima, así que la suma de ambas vías
+no admite comparación directa con ella.
+
+Los tres cortes de decisión están declarados como heurísticos en el
+registro de parámetros, porque son los que deciden qué se le dice al
+participante y nadie los ha validado todavía.
+
 ### B2. Módulo de exactitud diagnóstica y psicometría (`js/validation.js`)
 
 El objetivo declarado del estudio es calibrar los umbrales del riesgo
@@ -331,7 +385,7 @@ La v3.1 exportaba unas sesenta columnas con nombres en castellano sin
 acentos y sin definición, unidad ni codificación. Quien importara ese
 CSV en SPSS o en R tenía que inferir qué era `razonAdecuacionNeta`.
 
-Ahora se documentan **122 campos** —110 de la herramienta y 12 columnas
+Ahora se documentan **129 campos** —117 de la herramienta y 12 columnas
 del patrón de oro— con etiqueta, tipo, unidad, rango válido, codificación
 de los valores categóricos y origen del dato (capturado por el
 evaluador, calculado por el motor, del patrón de oro o de trazabilidad).
@@ -364,22 +418,30 @@ derivación es peor que no calcularlo.
 
 ### B5. Registro de parámetros con grado de evidencia
 
-Cada constante del modelo —**49 parámetros**— declara valor, unidad,
+Cada constante del modelo —**52 parámetros**— declara valor, unidad,
 fuente bibliográfica y grado de evidencia en una escala explícita:
 `medido` (17), `consenso` (14), `derivado` (7), `estimado` (7) y
-`heuristico` (4). Es la pieza que permite auditar la afirmación de estar
+`heuristico` (7). Es la pieza que permite auditar la afirmación de estar
 basado en evidencia sin que sea una frase de propaganda.
 
-Los cuatro parámetros heurísticos son la lista de trabajo del estudio de
+Los siete parámetros heurísticos son la lista de trabajo del estudio de
 validación, y la herramienta los enumera sola en la pestaña de
 Metodología: no hay que buscarlos en el código.
 
 | Parámetro | Valor | Qué debe calibrarlo |
 |---|---|---|
+| `CONDUCTA_CALCIO_CUBRE` | 100 % de la meta | Método dietético de referencia |
+| `CONDUCTA_CALCIO_LIMITE` | 75 % de la meta | Método dietético de referencia |
+| `CONDUCTA_CALCIO_DIETA_VIABLE` | 50 % de la meta | Método dietético de referencia |
 | `UMBRAL_SOLAR_MODERADO_FRACCION_RDA` | 0.40 | 25-hidroxivitamina D sérica |
 | `RIESGO_OSEO_CORTE_MODERADO` | 3 puntos | T-score de densitometría |
 | `RIESGO_OSEO_CORTE_ALTO` | 5 puntos | T-score de densitometría |
 | `PLAUSIBILIDAD_PROTEINA_FRACCION_MINIMA` | 0.50 | Contraste con registro de 24 h |
+
+Los tres primeros son nuevos y son los más consecuentes de todo el
+registro: deciden qué se le dice al participante —mantener el patrón,
+ajustarlo, o consultar para evaluar suplementación—. Están declarados
+como heurísticos precisamente porque nadie los ha validado todavía.
 
 ---
 

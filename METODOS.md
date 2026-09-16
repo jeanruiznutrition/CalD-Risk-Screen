@@ -6,7 +6,7 @@ implementa, y cada constante remite al registro de parámetros
 (`REGISTRO_PARAMETROS` en `js/data.js`), donde figura con su fuente y su
 grado de evidencia.
 
-Sello del motor: `CARDA-v6.0+2e78524e`. La parte tras el `+` es la huella
+Sello del motor: `CARDA-v6.0+7f6a3d8b`. La parte tras el `+` es la huella
 determinista del conjunto de parámetros y viaja en cada fila exportada.
 
 ---
@@ -557,7 +557,7 @@ grado de evidencia:
 | `consenso` | fijado por un organismo de referencia (IOM, EFSA, OMS) | 14 |
 | `derivado` | calculado a partir de valores publicados | 7 |
 | `estimado` | inferido por analogía con su grupo, sin medición directa | 7 |
-| `heuristico` | calibración propia de cribado, **pendiente de validación** | 4 |
+| `heuristico` | calibración propia de cribado, **pendiente de validación** | 7 |
 
 La huella de parámetros es FNV-1a de 32 bits sobre la serialización
 canónica `clave=valor` ordenada. No es criptográfica: solo tiene que
@@ -569,6 +569,9 @@ fila lleva `motorVersion` y `motorHuella`.
 
 | Parámetro | Valor actual | Patrón de oro que debe calibrarlo |
 |---|---|---|
+| `CONDUCTA_CALCIO_CUBRE` | 100 % de la meta absorbida | Método dietético de referencia |
+| `CONDUCTA_CALCIO_LIMITE` | 75 % de la meta absorbida | Método dietético de referencia |
+| `CONDUCTA_CALCIO_DIETA_VIABLE` | 50 % de la meta absorbida | Método dietético de referencia |
 | `UMBRAL_SOLAR_MODERADO_FRACCION_RDA` | 0.40 | 25-hidroxivitamina D sérica |
 | `RIESGO_OSEO_CORTE_MODERADO` | 3 puntos | T-score de densitometría |
 | `RIESGO_OSEO_CORTE_ALTO` | 5 puntos | T-score de densitometría |

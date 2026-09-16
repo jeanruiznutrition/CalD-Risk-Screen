@@ -73,6 +73,7 @@ const contexto = {};
     'calcularCalcioCorregido',
     'evaluarPanelOseo',
     'resumirBioquimicaParaRiesgoOseo',
+    'generarConductaSugerida',
     'REGISTRO_PARAMETROS',
     'CARDA_VERSION',
     'CARDA_HUELLA_PARAMETROS',
@@ -101,7 +102,7 @@ const {
     calcularEntradaTotalVitaminaD, evaluarPlausibilidadCuestionario,
     calcularOST, calcularORAI, calcularRiesgoOseo, calcularRiesgoOseoV6,
     calcularTFGe, calcularCalcioCorregido, evaluarPanelOseo,
-    resumirBioquimicaParaRiesgoOseo, REGISTRO_PARAMETROS, CARDA_VERSION,
+    resumirBioquimicaParaRiesgoOseo, generarConductaSugerida, REGISTRO_PARAMETROS, CARDA_VERSION,
     CARDA_HUELLA_PARAMETROS, CARDA_SELLO, parametrosPorGrado,
     SODIO_REFERENCIA_G_DIA, CAFE_REFERENCIA_TAZAS_DIA,
     FACTOR_IBP_CARBONATO_AYUNO, FACTOR_IBP_CARBONATO_CON_COMIDA,
@@ -1185,6 +1186,144 @@ const traduccionesES = (() => {
 verificarIgual('Todos los patrones emitidos tienen clave de traducción',
     [...patronesEmitidos].filter(k => !traduccionesES[k]).length, 0,
     'Sin la clave, la interfaz mostraría el identificador interno al evaluador');
+
+
+
+// ============================================================
+// 36. CONCLUSIÓN Y CONDUCTA SUGERIDA
+// ============================================================
+// Es la salida que responde al propósito declarado del instrumento, así
+// que su comportamiento tiene que estar fijado por pruebas: un cambio
+// silencioso aquí cambia lo que se le dice al paciente.
+
+bloque('36. Conclusión y conducta sugerida');
+
+const FUENTE_CONDUCTA_ASIMETRIA = 'La asimetría entre nutrientes es deliberada: el calcio de una dieta basada en plantas es alcanzable por vía dietética; la vitamina D, sin alimentos fortificados ni suplemento, no';
+const FUENTE_IOM_SOL = 'IOM/NASEM 2011: las ingestas de referencia de vitamina D se derivaron suponiendo exposición solar mínima, así que la suma de ingesta y síntesis cutánea no admite comparación directa con la RDA';
+
+const conductaCubre = generarConductaSugerida({
+    razonCalcioNeta: 112, resultadoVitDDieta: { totalEq: 16, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 300 }
+});
+verificarIgual('Quien cubre ambos requerimientos recibe una confirmación explícita, no silencio',
+    conductaCubre.veredicto, 'cubre_ambos',
+    'Confirmar que alguien sí cubre su requerimiento es un resultado, no la ausencia de una alerta');
+verificarIgual('Y no se le deriva', conductaCubre.requiereDerivacion, false,
+    'Derivar a quien no lo necesita hace perder credibilidad al instrumento');
+
+const conductaCaLimite = generarConductaSugerida({
+    razonCalcioNeta: 82, resultadoVitDDieta: { totalEq: 16, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 300 }
+});
+verificarIgual('Una brecha pequeña de calcio se resuelve con ajuste dietético, sin derivar',
+    conductaCaLimite.calcio.via, 'ajuste_dietetico', FUENTE_CONDUCTA_ASIMETRIA);
+verificarIgual('Y no genera derivación', conductaCaLimite.requiereDerivacion, false,
+    'La suplementación de calcio es la segunda opción, no la primera');
+
+const conductaCaBaja = generarConductaSugerida({
+    razonCalcioNeta: 62, resultadoVitDDieta: { totalEq: 16, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 300 }
+});
+verificarIgual('Con brecha intermedia de calcio, el ajuste dietético va primero',
+    conductaCaBaja.calcio.via, 'ajuste_dietetico_primero', FUENTE_CONDUCTA_ASIMETRIA);
+
+const conductaDBrecha = generarConductaSugerida({
+    razonCalcioNeta: 105, resultadoVitDDieta: { totalEq: 3, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 0 }
+});
+verificarIgual('Con brecha de vitamina D y sin sol, la conducta es evaluar suplementación',
+    conductaDBrecha.vitd.via, 'evaluar_suplementacion', FUENTE_CONDUCTA_ASIMETRIA);
+verificarCierto('Y se deriva para que un profesional establezca la cantidad',
+    conductaDBrecha.requiereDerivacion,
+    'La herramienta no indica dosis: cuantifica la brecha y deriva');
+
+const conductaDSol = generarConductaSugerida({
+    razonCalcioNeta: 105, resultadoVitDDieta: { totalEq: 3, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 400 }
+});
+verificarIgual('Con ingesta baja de vitamina D pero síntesis cutánea apreciable, se pide el valor sérico en vez de concluir',
+    conductaDSol.vitd.via, 'medir_25ohd', FUENTE_IOM_SOL);
+verificarIgual('Y el estado se declara indeterminado, no insuficiente',
+    conductaDSol.vitd.estado, 'indeterminado', FUENTE_IOM_SOL);
+
+// --- El biomarcador tiene precedencia sobre la estimación, en las dos direcciones ---
+const panelDSuficiente = evaluarPanelOseo({
+    vitD25OH: 38, calcioSerico: 9.2, albumina: 4.1, edad: 40, sexo: 'femenino', pesoKg: 62
+});
+const conductaBioAlta = generarConductaSugerida({
+    razonCalcioNeta: 105, resultadoVitDDieta: { totalEq: 2, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 0 }, panelBioquimico: panelDSuficiente
+});
+verificarIgual('Una 25(OH)D suficiente manda sobre una ingesta estimada baja',
+    conductaBioAlta.vitd.estado, 'cubre',
+    'El valor sérico es el estado real del participante; la estimación es un modelo');
+verificarIgual('Y la conclusión declara que se basa en el biomarcador',
+    conductaBioAlta.vitd.base, 'biomarcador',
+    'El informe tiene que decir sobre qué se decidió');
+
+const panelDDeficiente = evaluarPanelOseo({
+    vitD25OH: 11, calcioSerico: 9.2, albumina: 4.1, edad: 40, sexo: 'femenino', pesoKg: 62
+});
+const conductaBioBaja = generarConductaSugerida({
+    razonCalcioNeta: 105, resultadoVitDDieta: { totalEq: 20, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 500 }, panelBioquimico: panelDDeficiente
+});
+verificarIgual('Una 25(OH)D deficiente manda sobre una ingesta estimada suficiente',
+    conductaBioBaja.vitd.estado, 'no_cubre',
+    'La precedencia del biomarcador opera en las dos direcciones, no solo cuando conviene');
+
+// --- Circunstancias que convierten la decisión en clínica ---
+const conductaIBP = generarConductaSugerida({
+    razonCalcioNeta: 80, usaIBP: true, resultadoVitDDieta: { totalEq: 16, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 300 }
+});
+verificarCierto('El uso de inhibidores de la bomba de protones con brecha de calcio obliga a derivar',
+    conductaIBP.requiereDerivacion,
+    'O Connell et al. Am J Med 2005: el inhibidor condiciona qué sal de calcio y en qué momento');
+
+const panelHipercalciuria = evaluarPanelOseo({
+    calcioSerico: 9.4, albumina: 4.0, calcio24hMg: 400, edad: 45, sexo: 'femenino', pesoKg: 60,
+    creatinina: 0.8, vitD25OH: 35
+});
+const conductaHiperCa = generarConductaSugerida({
+    razonCalcioNeta: 85, resultadoVitDDieta: { totalEq: 16, meta: 15 },
+    resultadoSolar: { uiPromedioDia: 300 }, panelBioquimico: panelHipercalciuria
+});
+verificarCierto('La hipercalciuria obliga a derivar aunque la brecha de calcio sea pequeña',
+    conductaHiperCa.requiereDerivacion,
+    'Suplementar calcio ante hipercalciuria puede empeorar el cuadro: la decisión es clínica');
+
+// --- El descargo de no indicar dosis acompaña SIEMPRE a la salida ---
+[conductaCubre, conductaCaLimite, conductaDBrecha, conductaBioAlta].forEach((c, i) => {
+    verificarIgual(`La salida ${i + 1} lleva el descargo de que la herramienta no indica dosis`,
+        c.descargoKey, 'conduct_no_dose_disclaimer',
+        'El reparto es: la herramienta cuantifica la brecha, el profesional decide la dosis');
+});
+
+verificarIgual('Sin datos de calcio no se inventa una conclusión',
+    generarConductaSugerida({ razonCalcioNeta: NaN, resultadoVitDDieta: { totalEq: 0, meta: 0 } }).veredicto,
+    'datos_incompletos',
+    'Una conclusión con la ficha vacía sería una afirmación sin base');
+
+// Toda clave que la conducta pueda emitir tiene que existir en el idioma de referencia
+const clavesConducta = new Set();
+[conductaCubre, conductaCaLimite, conductaCaBaja, conductaDBrecha, conductaDSol,
+ conductaBioAlta, conductaBioBaja, conductaIBP, conductaHiperCa].forEach(c => {
+    clavesConducta.add('conduct_verdict_' + c.veredicto);
+    clavesConducta.add(c.descargoKey);
+    c.conclusiones.forEach(x => {
+        clavesConducta.add('conduct_nutrient_' + x.nutriente);
+        clavesConducta.add('conduct_state_' + x.estado);
+        clavesConducta.add('conduct_via_' + x.via);
+        if (x.motivoDerivacionKey) clavesConducta.add(x.motivoDerivacionKey);
+    });
+});
+const traduccionConducta = (new Function(
+    fs.readFileSync(path.join(raizJs, 'i18n', 'es.js'), 'utf8') + '; return TRADUCCION_ES;'
+))();
+verificarIgual('Todas las claves que la conducta puede emitir están traducidas',
+    [...clavesConducta].filter(k => !traduccionConducta[k]).length, 0,
+    'Sin la clave, la interfaz mostraría el identificador interno al paciente');
 
 
 // ============================================================

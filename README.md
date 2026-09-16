@@ -13,7 +13,7 @@ Herramienta hermana de **B12 Risk Screen**, del mismo autor.
 > con los rangos del laboratorio que emitió el informe y el contexto
 > clínico completo del participante.
 
-Sello del motor: `CARDA-v6.0+2e78524e`
+Sello del motor: `CARDA-v6.0+7f6a3d8b`
 
 ---
 
@@ -45,6 +45,12 @@ Resumen:
   `undefined` al CSV, porque la interfaz leía un campo que el motor
   nunca devolvió. Y la columna de procedencia del suplemento de vitamina
   D se rellenaba con 1 incluso para participantes sin suplemento.
+- **Conclusión y conducta sugerida.** La herramienta enuncia ahora la
+  respuesta a la pregunta para la que existe: si la persona cubre sus
+  requerimientos de calcio y vitamina D, y si no, qué corresponde hacer.
+  Distingue la brecha cerrable con alimentos de la que requiere consultar
+  con nutricionista o médico, confirma explícitamente a quien sí cubre, y
+  no indica dosis en ningún caso.
 - **Panel bioquímico completo** (`js/biomarkers.js`): albúmina con
   calcio corregido, paratohormona, fósforo, fosfatasa alcalina,
   magnesio, filtración glomerular estimada y calcio urinario, evaluados
@@ -52,10 +58,10 @@ Resumen:
 - **Módulo de exactitud diagnóstica** (`js/validation.js`) y su pestaña:
   la herramienta puede ahora demostrar su propio desempeño contra la
   densitometría, en el navegador y sin enviar datos a ningún sitio.
-- **Diccionario de datos** de 122 campos, exportable en CSV y en formato
+- **Diccionario de datos** de 129 campos, exportable en CSV y en formato
   de importación de REDCap, más exportación en formato largo.
-- **Registro de parámetros con grado de evidencia.** Las 49 constantes
-  del modelo declaran su fuente y su grado; los 4 parámetros heurísticos
+- **Registro de parámetros con grado de evidencia.** Las 52 constantes
+  del modelo declaran su fuente y su grado; los 7 parámetros heurísticos
   se enumeran solos en la pestaña de Metodología, y son la lista de
   trabajo del estudio de validación.
 - **La pantalla gris, sustituida por un mensaje útil**, y autoguardado
