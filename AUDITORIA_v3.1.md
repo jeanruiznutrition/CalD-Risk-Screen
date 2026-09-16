@@ -82,13 +82,40 @@ metodológica que el revisor necesita ver.
 
 ### A3. `vitDSupGenerico` se registra aunque no haya suplemento
 
-`app.js`, línea 543: `suplementoVitD.forma !== 'ninguna' ? ... : ''`. El campo
-`forma` solo toma los valores `'D3'`, `'D2'` o `'desconocida'`; nunca
-`'ninguna'`. La condición es siempre verdadera, así que la columna de
-procedencia del dato se llena con 1 incluso para participantes que no toman
-suplemento de vitamina D. Lo mismo en la línea 639 del informe individual.
-**Corrección:** la condición debe ser sobre la dosis (`uiPorDia > 0 &&
-diasPorSemana > 0`), que es lo que define la existencia del suplemento.
+> **Corrección de este hallazgo, posterior a la v6.0.** La primera
+> redacción afirmaba que el campo `forma` «nunca toma el valor
+> `'ninguna'`». Eso es **falso**: el desplegable de la interfaz ofrece
+> explícitamente `<option value="ninguna">`, así que el valor sí es
+> alcanzable. El defecto es real, pero por otra razón, y conviene dejarlo
+> escrito con exactitud porque de la redacción equivocada salió una
+> regresión (ver el recuadro al final de esta sección).
+
+`app.js`, línea 543: `suplementoVitD.forma !== 'ninguna' ? ... : ''`. El
+valor **por defecto** de `forma` es `'D3'`, de modo que la condición es
+verdadera para todo participante que no toque ese control — que son la
+mayoría, porque lo primero que hace el evaluador no es declarar que *no*
+hay suplemento. La columna de procedencia del dato se llena con 1 para
+participantes sin suplemento de vitamina D. Lo mismo en la línea 639 del
+informe individual.
+
+**Corrección.** En la columna del CSV y en el informe, la condición debe
+ser sobre la **dosis** (`uiPorDia > 0 && diasPorSemana > 0`), que es lo
+que define la existencia del suplemento. En el **envoltorio de los campos
+de entrada**, en cambio, la condición correcta sigue siendo
+`forma !== 'ninguna'`.
+
+> **Regresión introducida al corregir este hallazgo, y ya reparada.** La
+> sustitución se aplicó de forma mecánica a todos los usos de la
+> condición, incluido el envoltorio de los propios campos de dosis y
+> frecuencia. El efecto fue que esos campos solo aparecían cuando ya
+> había una dosis registrada, así que en la herramienta publicada no
+> había forma de introducirla: se podía elegir la forma química y nada
+> más. Lo detectó el autor al usarla.
+>
+> La lección, que ahora está escrita como prueba en `tests/humo.js`: el
+> envoltorio de un campo de entrada nunca puede depender del dato que ese
+> campo captura. La prueba interroga el árbol renderizado con la ficha
+> vacía y falla si un campo de dosis no es alcanzable.
 
 ### A4. La categoría solar que alimenta el riesgo óseo usa un modelo, y hay otro sin usar
 

@@ -556,3 +556,71 @@ button[class*="bg-brand-600"][class*="border-brand-600"] {
 
     @page { margin: 1.5cm; }
 }
+
+/* ============================================================
+   Recorrido vertical (v6.0)
+   ------------------------------------------------------------
+   La v3.1 usaba dos columnas: entradas a la izquierda, resultados a la
+   derecha. Ahora el recorrido es vertical, en seis pasos, con los
+   resultados al final. Estos estilos son los que ese cambio necesita y
+   que Tailwind no da hechos.
+   ============================================================ */
+
+/* Los anclajes de #cuestionario y #resultados tienen que dejar libre el
+   encabezado fijo (4rem) y la franja de resumen (≈3.5rem); si no, el
+   destino del salto queda debajo de ellos. */
+#cuestionario,
+#resultados {
+    scroll-margin-top: 7.5rem;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Quien haya pedido menos animación en su sistema no debe recibir un
+   desplazamiento animado: es una preferencia de accesibilidad, no un
+   gusto estético. */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}
+
+/* Franja de resumen: se apoya sobre el contenido que pasa por debajo, así
+   que necesita separarse de él con algo más que el fondo translúcido. */
+.resumen-fijo {
+    box-shadow: 0 4px 16px -6px rgba(15, 23, 42, 0.18);
+}
+
+.dark .resumen-fijo {
+    box-shadow: 0 4px 16px -6px rgba(0, 0, 0, 0.55);
+}
+
+/* Cabecera de paso: la línea vertical conecta visualmente el número con
+   las tarjetas que dependen de él, de modo que se vea dónde acaba un paso
+   y empieza el siguiente sin necesidad de recuadros anidados. */
+.paso-cabecera {
+    position: relative;
+}
+
+.paso-cabecera::after {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 2.5rem;
+    bottom: -1.5rem;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(148, 163, 184, 0.35), transparent);
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    .paso-cabecera::after { display: none; }
+}
+
+/* Al imprimir no tiene sentido ninguno de los dos: la franja fija se
+   duplicaría en cada página y la línea de paso no aporta nada en papel. */
+@media print {
+    .resumen-fijo { display: none !important; }
+    .paso-cabecera::after { display: none; }
+    #cuestionario, #resultados { scroll-margin-top: 0; }
+}

@@ -61,6 +61,10 @@ Resumen:
 - **La pantalla gris, sustituida por un mensaje útil**, y autoguardado
   del formulario para no perder una entrevista con un recargado
   accidental.
+- **Recorrido vertical en seis pasos.** Los cuestionarios van arriba y se
+  bajan en orden; los resultados, todos juntos al final, no en una
+  columna al lado. Una franja de resumen fija bajo el encabezado mantiene
+  a la vista las cuatro cifras clave mientras se escribe.
 
 ---
 
@@ -174,8 +178,12 @@ de datos frente a los campos que el CSV exporta.
 
 ## Flujo de trabajo del estudio de validación
 
-1. **Entrevista.** Pestaña *Tamizaje*. El formulario se autoguarda en el
-   navegador, así que un recargado accidental no pierde la sesión.
+1. **Entrevista.** Pestaña *Tamizaje*, de arriba abajo: (1) participante,
+   (2) cuestionario de frecuencia de consumo, (3) suplementación, (4)
+   exposición solar y geografía, (5) actividad física y función, (6)
+   laboratorio. Los resultados quedan al final, bajo su divisoria. El
+   formulario se autoguarda en el navegador, así que un recargado
+   accidental no pierde la sesión.
 2. **Guardar en el registro.** Cada fila lleva estampada la versión del
    motor y la huella de parámetros con que se calculó.
 3. **Exportar.** El CSV ancho incluye 12 columnas del patrón de oro
@@ -205,7 +213,7 @@ pantalla en vez de mezclar dos modelos en silencio.
 
 | Idioma | Estado |
 |---|---|
-| Español (`es`) | Idioma de referencia, completo (752 claves) |
+| Español (`es`) | Idioma de referencia, completo (774 claves) |
 | Inglés (`en`) | Completo, traducido del español |
 | Portugués (`pt`) | Completo, traducido del español |
 

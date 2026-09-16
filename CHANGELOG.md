@@ -231,10 +231,20 @@ de compatibilidad para que ningún informe anterior quede roto. La suite
 lo cubre ahora con una prueba que comprueba que el valor es un número.
 
 **`vitDSupGenerico`.** La condición comparaba `suplementoVitD.forma`
-contra `'ninguna'`, valor que ese campo nunca toma, de modo que la
-columna de procedencia del dato se rellenaba con 1 incluso para
-participantes sin suplemento de vitamina D. Ahora la condición es sobre
-la dosis, que es lo que define la existencia del suplemento.
+contra `'ninguna'`. Ese valor **sí** es alcanzable —el desplegable lo
+ofrece—, pero el valor por defecto es `'D3'`, de modo que la condición
+resultaba verdadera para todo participante que no tocara ese control, y
+la columna de procedencia del dato se rellenaba con 1 incluso sin
+suplemento de vitamina D. En el CSV y en el informe la condición es ahora
+sobre la **dosis**, que es lo que define la existencia del suplemento; en
+el envoltorio de los campos de entrada sigue siendo sobre la forma.
+
+> La primera corrección de este defecto aplicó la condición de dosis
+> también al envoltorio de los propios campos de dosis y frecuencia, con
+> lo que esos campos solo aparecían si el dato ya existía y no había
+> manera de introducirlo. Está reparado, y `tests/humo.js` lo comprueba
+> ahora interrogando el árbol renderizado con la ficha vacía. El
+> diagnóstico completo, en `AUDITORIA_v3.1.md`, sección A3.
 
 ---
 
@@ -418,9 +428,69 @@ sola pantalla deja de caber. Se separa en Tamizaje, Validación y
 Metodología, para que el evaluador no tenga que desplazarse por
 metodología para llegar al cuestionario.
 
-### C5. Traducciones
+### C5. Recorrido vertical: cuestionarios arriba, resultados al final
 
-Se añaden **284 claves nuevas** en los tres idiomas. La prueba de humo
+**Antes.** Rejilla de dos columnas: entradas a la izquierda, resultados a
+la derecha, ambas desplazándose a la vez.
+
+**Problema.** En una entrevista real eso obliga a saltar la vista de un
+lado al otro mientras se pregunta, y ninguna de las dos columnas se lee
+cómoda: la de entradas queda estrecha y la de resultados, descolgada de
+la pregunta que la produjo.
+
+**Ahora.** Una sola columna de ancho contenido, con el recorrido que
+sigue la entrevista: **(1)** participante, **(2)** cuestionario de
+frecuencia de consumo, **(3)** suplementación, **(4)** exposición solar y
+geografía, **(5)** actividad física y función, **(6)** laboratorio, y al
+final **todos los resultados juntos**, bajo una divisoria, con un enlace
+de vuelta al cuestionario.
+
+Cada paso lleva su número, su icono y una línea que explica qué alimenta
+del motor, de modo que el evaluador sepa por qué está preguntando algo.
+
+Como los resultados dejan de estar a la vista mientras se escribe, se
+añade una **franja de resumen** que se queda pegada bajo el encabezado
+con las cuatro cifras clave —calcio absorbido, vitamina D, riesgo óseo y
+SARC-F—, la marca de dato a revisar cuando la hay, y un botón que baja al
+detalle. Aparece solo cuando ya hay algo que resumir.
+
+### C6. La tarjeta de «métricas de la v6.0», disuelta
+
+Las métricas nuevas se presentaban juntas en una tarjeta aparte titulada
+como novedades de la versión. Eso convertía en dos herramientas lo que es
+una: el evaluador tenía que leer el riesgo óseo en un sitio y su desglose
+en otro. Cada bloque está ahora donde le corresponde:
+
+| Bloque | Dónde vive ahora |
+|---|---|
+| Entrada total de vitamina D y meta ajustada por tamaño corporal | tarjeta de vitamina D |
+| Proteína utilizable, DIAAS medio, umbral de leucina | tarjeta nueva *Proteína y masa muscular*, junto al SARC-CalF |
+| Desglose conductual/bioquímico del riesgo óseo, OST y ORAI | tarjeta nueva *Salud ósea* |
+| Plausibilidad del cuestionario | franja de calidad del dato, **al principio** de los resultados |
+
+La plausibilidad se movió al principio a propósito: si el cuestionario
+está incompleto, todo lo que viene después hereda ese problema, y el
+evaluador tiene que verlo antes de leer cualquier cifra.
+
+### C7. Retirados los avisos sobre la forma D2 de la vitamina D
+
+La herramienta mostraba un aviso del tipo «el N % del aporte de vitamina D
+proviene de fuentes con D2 (ergocalciferol)» cuando la proporción
+estimada de D2 superaba el 50 %, y otro al elegir un suplemento de D2.
+
+El primero no es sostenible: la forma química de la vitamina D de un
+alimento fortificado rara vez figura en la etiqueta, y el catálogo la
+asigna por grupo de alimento, así que afirmar un porcentaje concreto es
+una conclusión que el dato no soporta. Los dos avisos se retiran.
+
+La corrección de potencia D2/D3 **se sigue aplicando al cálculo** cuando
+el evaluador declara la forma del suplemento, que sí figura en su
+etiqueta, y el resultado separa el total sin corregir del equivalente de
+potencia D3.
+
+### C8. Traducciones
+
+Se añaden **293 claves nuevas** en los tres idiomas (de 481 a 774). La prueba de humo
 comprueba ahora la cobertura de los tres, no solo del de referencia: una
 clave presente solo en español dejaba el inglés y el portugués mostrando
 texto castellano sin avisar, porque el traductor recurre al idioma de

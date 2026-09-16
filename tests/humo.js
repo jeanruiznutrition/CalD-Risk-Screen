@@ -314,7 +314,7 @@ try {
         'React', 'h', 'document', 'navigator', 'localStorage', 'window', 'Blob', 'alert', 'ReactDOM', 'console',
         fuenteMotor + '\n' + fuenteI18n + '\n' + panelesTransformados + '\n' + preludioApp + '\n' +
         'function App() {\n' + transformado + '\n}\n' +
-        'App();\n' +
+        'globalThis.__arbolApp = App();\n' +
         'return (function () {' + pruebaDePaneles + '})();'
     );
     panelesProbados = fnRender(React, h, documentSimulado, entorno.navigator, entorno.localStorage,
@@ -372,6 +372,55 @@ try {
     });
 } catch (e) {
     advertencias.push('No se pudieron verificar las claves de traducción: ' + e.message);
+}
+
+// LOS CAMPOS DE ENTRADA TIENEN QUE SER ALCANZABLES CON LA FICHA VACÍA.
+// Esta comprobación existe por una regresión real: al corregir el hallazgo
+// A3 de la auditoría se sustituyó la condición `forma !== 'ninguna'` en
+// todos sus usos, incluido el envoltorio de los propios campos de dosis y
+// frecuencia del suplemento de vitamina D. El resultado fue que esos
+// campos solo aparecían cuando ya había una dosis registrada, así que no
+// había forma de introducirla. El envoltorio de un campo de entrada nunca
+// puede depender de que el dato que ese campo captura ya exista.
+//
+// Se interroga el árbol renderizado con el estado INICIAL (dosis vacía),
+// que es la situación de una ficha recién abierta.
+try {
+    const traduccionRef = new Function(
+        fs.readFileSync(path.join(rutaJs, 'i18n', 'es.js'), 'utf8') + '; return TRADUCCION_ES;'
+    )();
+    const buscar = (nodo, predicado, hallados = []) => {
+        if (!nodo || typeof nodo !== 'object') return hallados;
+        if (Array.isArray(nodo)) { nodo.forEach(n => buscar(n, predicado, hallados)); return hallados; }
+        if (predicado(nodo)) hallados.push(nodo);
+        (nodo.hijos || []).forEach(n => buscar(n, predicado, hallados));
+        return hallados;
+    };
+    const arbol = globalThis.__arbolApp;
+    if (!arbol) {
+        advertencias.push('No se pudo capturar el árbol renderizado para comprobar los campos de entrada');
+    } else {
+        const obligatorios = [
+            ['vitd_supp_ui_placeholder', 'dosis del suplemento de vitamina D'],
+            ['calcium_supp_mg_placeholder', 'dosis del suplemento de calcio']
+        ];
+        const ausentes = [];
+        obligatorios.forEach(([clave, descripcion]) => {
+            const texto = traduccionRef[clave];
+            if (!texto) return;  // la clave no existe en esta versión: no se exige
+            const encontrados = buscar(arbol, n =>
+                n.tag === 'input' && n.props && n.props.placeholder === texto);
+            if (!encontrados.length) ausentes.push(`${descripcion} (${clave})`);
+        });
+        if (ausentes.length) {
+            errores.push(new Error(
+                'Campos de entrada inalcanzables con la ficha vacía: ' + ausentes.join(' · ')));
+        } else {
+            advertencias.push('CAMPOS_OK:' + obligatorios.length);
+        }
+    }
+} catch (e) {
+    advertencias.push('No se pudo verificar la accesibilidad de los campos: ' + e.message);
 }
 
 // NINGÚN NÚMERO DE VERSIÓN ESCRITO A MANO EN TEXTO VISIBLE.
@@ -451,6 +500,10 @@ if (errores.length === 0) {
     if (panelesProbados) {
         console.log(`  ${VERDE}✓${FIN} Los ${panelesProbados} componentes de ui-panels.js se renderizan sin errores`);
     }
+    const okCampos = advertencias.find(a => a.startsWith('CAMPOS_OK:'));
+    if (okCampos) {
+        console.log(`  ${VERDE}✓${FIN} Los campos de dosis son alcanzables con la ficha vacía`);
+    }
     const okVersion = advertencias.find(a => a.startsWith('VERSION_OK:'));
     if (okVersion) {
         console.log(`  ${VERDE}✓${FIN} Todo texto visible anuncia la versión v${okVersion.split(':')[1]} del motor`);
@@ -472,13 +525,13 @@ if (errores.length === 0) {
     });
 }
 
-advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:')).forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
+advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:') && !a.startsWith('CAMPOS_OK:')).forEach(a => console.log(`  ${AMARILLO}!${FIN} ${a}`));
 
 if (errores.length > 0) {
     console.log(`\n${ROJO}${NEGRITA}La aplicación fallaría al cargar.${FIN}\n`);
     process.exit(1);
 }
-if (advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:')).length > 0) {
+if (advertencias.filter(a => !a.startsWith('ARCHIVOS_OK:') && !a.startsWith('VERSION_OK:') && !a.startsWith('CAMPOS_OK:')).length > 0) {
     console.log(`\n${AMARILLO}Se ejecuta, pero hay advertencias que revisar.${FIN}\n`);
     process.exit(0);
 }

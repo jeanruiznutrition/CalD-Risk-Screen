@@ -1036,7 +1036,7 @@ function App() {
                     bioquímico, la validación y el registro de parámetros eso deja
                     de caber: separarlo en pestañas evita que el evaluador tenga
                     que desplazarse por metodología para llegar al cuestionario. */}
-                <div class="mb-6 flex flex-wrap gap-1.5 no-print border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div class="max-w-5xl mx-auto mb-6 flex flex-wrap gap-1.5 no-print border-b border-slate-200 dark:border-slate-800 pb-3">
                     {[
                         { id: 'tamizaje', icono: 'fa-clipboard-list', clave: 'tab_screening' },
                         { id: 'validacion', icono: 'fa-chart-line', clave: 'tab_validation' },
@@ -1066,16 +1066,83 @@ function App() {
                     </div>
                 )}
 
-                {vista === 'validacion' && <PanelValidacion t={t} registro={registroAcumulado} />}
-                {vista === 'metodologia' && <PanelMetodologia t={t} filaEjemplo={construirFilaParticipante()} />}
+                <div class="max-w-5xl mx-auto w-full">
+                    {vista === 'validacion' && <PanelValidacion t={t} registro={registroAcumulado} />}
+                    {vista === 'metodologia' && <PanelMetodologia t={t} filaEjemplo={construirFilaParticipante()} />}
+                </div>
 
-                <div class={'grid grid-cols-1 lg:grid-cols-12 gap-8 ' + (vista === 'tamizaje' ? '' : 'hidden')}>
+                <div class={'max-w-5xl mx-auto flex flex-col gap-8 ' + (vista === 'tamizaje' ? '' : 'hidden')}>
 
-                    {/* ===================== COLUMNA IZQUIERDA: INPUTS ===================== */}
-                    <section class="lg:col-span-5 flex flex-col gap-8 no-print">
+                    {/* ===================== RESUMEN FIJO ===================== */}
+                    {/* Con los resultados al final, el evaluador necesita ver las cifras
+                        clave sin dejar de escribir. Esta franja se queda pegada bajo el
+                        encabezado y lleva al detalle de un clic. Aparece solo cuando ya
+                        hay algo que resumir, para no ocupar espacio en una ficha vacía. */}
+                    {(resultadosCalcio.promedioIngeridoSemanal > 0 || resultadoVitDDieta.totalEq > 0) && (
+                        <div class="sticky top-[4.5rem] z-40 no-print">
+                            <div class="resumen-fijo rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur px-4 py-2.5 flex items-center gap-3 overflow-x-auto">
+                                <div class="shrink-0">
+                                    <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t('summary_calcium')}</div>
+                                    <div class="text-sm font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                                        {razonSegunMarco}<span class="text-[10px] font-semibold">%</span>
+                                    </div>
+                                </div>
+                                <div class="w-px h-7 bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+                                <div class="shrink-0">
+                                    <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t('summary_vitd')}</div>
+                                    <div class="text-sm font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                                        {resultadoVitDDieta.totalEq}<span class="text-[10px] font-semibold">/{resultadoVitDDieta.meta} mcg</span>
+                                    </div>
+                                </div>
+                                <div class="w-px h-7 bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+                                <div class="shrink-0">
+                                    <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">{t('summary_bone')}</div>
+                                    <div class={'text-sm font-extrabold leading-tight ' +
+                                        (resultadoOseo.colorKey === 'rose' ? 'text-rose-600 dark:text-rose-400'
+                                            : resultadoOseo.colorKey === 'amber' ? 'text-amber-600 dark:text-amber-400'
+                                            : 'text-emerald-600 dark:text-emerald-400')}>
+                                        {t('bone_' + resultadoOseo.categoria)}
+                                    </div>
+                                </div>
+                                <div class="w-px h-7 bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+                                <div class="shrink-0">
+                                    <div class="text-[9px] font-bold uppercase tracking-wider text-slate-400">SARC-F</div>
+                                    <div class="text-sm font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                                        {resultadoSarcopenia.puntajeTotal}<span class="text-[10px] font-semibold">/10</span>
+                                    </div>
+                                </div>
+                                {!plausibilidad.plausible && (
+                                    <div class="shrink-0 ml-1 px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                                        <i class="fa-solid fa-flag mr-1"></i>{t('summary_flagged')}
+                                    </div>
+                                )}
+                                <a href="#resultados" class="ml-auto shrink-0 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-bold">
+                                    {t('summary_see_results')} <i class="fa-solid fa-arrow-down ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    )}
 
+                    {/* ===================== CUESTIONARIOS (arriba) ===================== */}
+                    {/* La v3.1 ponía las entradas a la izquierda y los resultados a la
+                        derecha. En una entrevista real eso obliga a saltar la vista de
+                        un lado a otro mientras se pregunta. Ahora el recorrido es
+                        vertical: seis pasos numerados y, al final, todos los
+                        resultados juntos. */}
+                    <section id="cuestionario" class="flex flex-col gap-6 no-print">
 
-                        {/* CARD: IDENTIFICACIÓN DEL PARTICIPANTE Y REGISTRO */}
+                        {/* ---------- PASO 1 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">1</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-id-card text-brand-600 dark:text-brand-400 text-sm"></i> {t('step1_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step1_desc')}</p>
+                            </div>
+                        </div>
+
+{/* CARD: IDENTIFICACIÓN DEL PARTICIPANTE Y REGISTRO */}
                         <div class="bg-white dark:bg-slate-900 border-2 border-brand-300 dark:border-brand-800 rounded-2xl p-6 shadow-sm">
                             <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-id-card text-indigo-600 dark:text-indigo-400"></i> {t('registry_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('registry_desc')}</p>
@@ -1130,7 +1197,7 @@ function App() {
                             )}
                         </div>
 
-                        {/* CARD: PERFIL */}
+{/* CARD: PERFIL */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                             <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="fa-solid fa-user text-blue-600 dark:text-blue-400"></i> {t('profile_title')}</h3>
                             <div class="grid grid-cols-2 gap-4">
@@ -1185,405 +1252,18 @@ function App() {
                             </div>
                         </div>
 
-                        {/* CARD: EJERCICIO */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-emerald-600 dark:text-emerald-400"></i> {t('exercise_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('exercise_desc')}</p>
-                            <div class="space-y-3">
-                                <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">{t('exercise_aerobic_label')}</label>
-                                    <p class="text-[10px] text-slate-400 mb-2">{t('exercise_aerobic_examples')}</p>
-                                    <div class="flex items-center gap-2">
-                                        <input type="number" min="0" max="40" step="0.5" value={ejercicio.horasAerobicoSemana}
-                                            onChange={(e) => handleEjercicioChange('horasAerobicoSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                            class="w-24 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
-                                        <span class="text-xs text-slate-500">{t('exercise_hours_week')}</span>
-                                    </div>
-                                </div>
-                                <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
-                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">{t('exercise_strength_label')}</label>
-                                    <p class="text-[10px] text-slate-400 mb-2">{t('exercise_strength_examples')}</p>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <input type="number" min="0" max="7" value={ejercicio.diasFuerzaSemana}
-                                                onChange={(e) => handleEjercicioChange('diasFuerzaSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-16 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
-                                            <span class="text-xs text-slate-500">{t('exercise_days_week')}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <input type="number" min="0" max="20" step="0.5" value={ejercicio.horasFuerzaSemana}
-                                                onChange={(e) => handleEjercicioChange('horasFuerzaSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-16 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
-                                            <span class="text-xs text-slate-500">{t('exercise_hours_week')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between text-xs font-bold text-slate-500 pt-1">
-                                    <span>{t('exercise_total_label')}</span>
-                                    <span class="text-brand-600 dark:text-brand-400">{resultadoEjercicio.horasTotalesSemana} {t('exercise_hours_week')}</span>
-                                </div>
+                        {/* ---------- PASO 2 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">2</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-utensils text-brand-600 dark:text-brand-400 text-sm"></i> {t('step2_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step2_desc')}</p>
                             </div>
                         </div>
 
-                        {/* CARD: SUPLEMENTACIÓN DE CALCIO */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-pills text-teal-600 dark:text-teal-400"></i> {t('supp_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('supp_desc')}</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('supp_type_label')}</label>
-                                    <select value={suplementoCalcio.tipoId} onChange={(e) => handleSuplementoCalcioChange('tipoId', e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="ninguno">{t('supp_none')}</option>
-                                        <option value="carbonato">{t('supp_type_carbonate')}</option>
-                                        <option value="citrato">{t('supp_type_citrate')}</option>
-                                        <option value="otro">{t('supp_type_other')}</option>
-                                    </select>
-                                </div>
-                                {suplementoCalcio.tipoId !== 'ninguno' && (
-                                    <div class="apple-reveal grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_mg_day')}</label>
-                                            <input type="number" min="0" step="50" value={suplementoCalcio.mgPorDia}
-                                                onChange={(e) => handleSuplementoCalcioChange('mgPorDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_times_day')}</label>
-                                            <select value={suplementoCalcio.vecesPorDia} onChange={(e) => handleSuplementoCalcioChange('vecesPorDia', parseInt(e.target.value))}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
-                                                <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_days_week')}</label>
-                                            <select value={suplementoCalcio.diasPorSemana} onChange={(e) => handleSuplementoCalcioChange('diasPorSemana', parseInt(e.target.value))}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
-                                                {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
-                                {suplementoCalcio.tipoId === 'citrato' && (
-                                    <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{t('supp_citrate_note')}</p>
-                                )}
-                                {suplementoCalcio.tipoId !== 'ninguno' && (
-                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
-                                        <input type="checkbox" checked={suplementoCalcio.etiquetaGenerica !== false}
-                                            onChange={(e) => handleSuplementoCalcioChange('etiquetaGenerica', e.target.checked)}
-                                            class="rounded accent-brand-600" />
-                                        {t('ffq_generic_label')}
-                                    </label>
-                                )}
-
-                                <div class="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800">
-                                    <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('modifiers_title')}</h4>
-                                    <label class="flex items-start gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-3">
-                                        <input type="checkbox" checked={modificadores.usaIBP} onChange={(e) => handleModificadorChange('usaIBP', e.target.checked)} class="rounded accent-brand-600 mt-0.5" />
-                                        <span>{t('modifier_ppi')}</span>
-                                    </label>
-
-                                    {/* MOMENTO DE LA TOMA (v6.0). El factor de los
-                                        inhibidores proviene de estudios en ayuno; con
-                                        comida la penalización casi desaparece porque el
-                                        alimento estimula la acidez que el carbonato
-                                        necesita. Aplicar el factor de ayuno a todo el
-                                        mundo sobrestima el problema. */}
-                                    {suplementoCalcio.tipoId !== 'ninguno' && (
-                                        <div class="mb-3">
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_timing_label')}</label>
-                                            <select value={modificadores.momentoToma} onChange={(e) => handleModificadorChange('momentoToma', e.target.value)}
-                                                class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
-                                                {MOMENTOS_TOMA_SUPLEMENTO.map(m => <option key={m.id} value={m.id}>{t(m.key)}</option>)}
-                                            </select>
-                                            {modificadores.usaIBP && suplementoCalcio.tipoId === 'carbonato' && (
-                                                <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-semibold">
-                                                    {modificadores.momentoToma === 'ayuno' ? t('supp_timing_warn_fasting') : t('supp_timing_ok_meal')}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* AGUA DE CONSUMO (v6.0). Fuente de calcio que los
-                                        cuestionarios de frecuencia ignoran por sistema y
-                                        que puede aportar 100-300 mg/día con absorción
-                                        comparable a la de la leche. */}
-                                    <div class="mb-3">
-                                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('water_label')}</label>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <select value={agua.tipo} onChange={(e) => setAgua(prev => ({ ...prev, tipo: e.target.value }))}
-                                                class="px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
-                                                {TIPOS_AGUA.map(w => <option key={w.id} value={w.id}>{t(w.key)}</option>)}
-                                            </select>
-                                            <input type="number" min="0" step="0.25" value={agua.litrosPorDia}
-                                                onChange={(e) => setAgua(prev => ({ ...prev, litrosPorDia: e.target.value }))}
-                                                placeholder={t('water_liters_placeholder')}
-                                                class="px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
-                                        </div>
-                                        {agua.tipo === 'personalizada' && (
-                                            <input type="number" min="0" step="1" value={agua.mgPorLitro}
-                                                onChange={(e) => setAgua(prev => ({ ...prev, mgPorLitro: e.target.value }))}
-                                                placeholder={t('water_mgl_placeholder')}
-                                                class="mt-2 w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
-                                        )}
-                                        {resultadosCalcio.aguaMgPorDia > 0 && (
-                                            <p class="text-[10px] text-slate-500 mt-1">
-                                                {t('water_contributes')}: <span class="font-bold">{resultadosCalcio.aguaMgPorDia} mg/d</span>
-                                            </p>
-                                        )}
-                                    </div>
-                                    {calcioConModificadores.alertaIBPCarbonato && (
-                                        <p class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mb-3 leading-relaxed">{t('alert_ppi_carbonate')}</p>
-                                    )}
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('modifier_sodium')}</label>
-                                            <select value={modificadores.nivelSodio} onChange={(e) => handleModificadorChange('nivelSodio', e.target.value)}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
-                                                <option value="bajo">{t('sodium_low')}</option>
-                                                <option value="medio">{t('sodium_medium')}</option>
-                                                <option value="alto">{t('sodium_high')}</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('modifier_coffee')}</label>
-                                            <input type="number" min="0" max="15" value={modificadores.tazasCafeDia}
-                                                onChange={(e) => handleModificadorChange('tazasCafeDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100" />
-                                        </div>
-                                    </div>
-                                    {calcioConModificadores.perdidas.perdidaTotal > 0 && (
-                                        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{t('modifier_losses').replace('{total}', calcioConModificadores.perdidas.perdidaTotal).replace('{na}', calcioConModificadores.perdidas.perdidaSodio).replace('{caf}', calcioConModificadores.perdidas.perdidaCafeina)}</p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-
-                        {/* CARD: SUPLEMENTACIÓN DE VITAMINA D */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-capsules text-amber-600 dark:text-amber-400"></i> {t('vitd_supp_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('vitd_supp_desc')}</p>
-
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('vitd_supp_form_label')}</label>
-                                    <select value={suplementoVitD.forma} onChange={(e) => handleSuplementoVitDChange('forma', e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="ninguna">{t('vitd_supp_none')}</option>
-                                        {FORMAS_SUPLEMENTO_VITD.map(f => <option key={f.id} value={f.id}>{t(f.key)}</option>)}
-                                    </select>
-                                </div>
-
-                                {(Number(suplementoVitD.uiPorDia) > 0 && Number(suplementoVitD.diasPorSemana) > 0) && (
-                                    <div class="apple-reveal grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('vitd_supp_ui_day')}</label>
-                                            <input type="text" inputMode="decimal" placeholder={t('vitd_supp_ui_placeholder')} value={suplementoVitD.uiPorDia}
-                                                onChange={(e) => handleSuplementoVitDChange('uiPorDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100" />
-                                            {parseFloat(suplementoVitD.uiPorDia) > 0 && (
-                                                <p class="text-[10px] text-slate-400 mt-1">{t('vitd_supp_equals_mcg').replace('{mcg}', Math.round((parseFloat(suplementoVitD.uiPorDia) / 40) * 10) / 10)}</p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_days_week')}</label>
-                                            <select value={suplementoVitD.diasPorSemana} onChange={(e) => handleSuplementoVitDChange('diasPorSemana', parseInt(e.target.value))}
-                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
-                                                {[0,1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {suplementoVitD.forma === 'D2' && (
-                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">{t('vitd_supp_d2_note')}</p>
-                                )}
-                                {suplementoVitD.forma === 'desconocida' && (
-                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">{t('vitd_supp_unknown_note')}</p>
-                                )}
-                                {parseFloat(suplementoVitD.uiPorDia) > 0 && Number(suplementoVitD.diasPorSemana) > 0 && (
-                                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                        <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                                            {t('vitd_supp_contribution')
-                                                .replace('{ui}', Math.round(resultadoVitDDieta.suplEq * 40))
-                                                .replace('{mcg}', resultadoVitDDieta.suplEq)}
-                                        </p>
-                                    </div>
-                                )}
-                                {(Number(suplementoVitD.uiPorDia) > 0 && Number(suplementoVitD.diasPorSemana) > 0) && (
-                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
-                                        <input type="checkbox" checked={suplementoVitD.etiquetaGenerica !== false}
-                                            onChange={(e) => handleSuplementoVitDChange('etiquetaGenerica', e.target.checked)}
-                                            class="rounded accent-brand-600" />
-                                        {t('ffq_generic_label')}
-                                    </label>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* CARD: SUPLEMENTOS DE ENTRENAMIENTO (creatina y proteína en polvo) */}
-                        {/* Variables de control para el estudio, no alimentan el motor CARDA. */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-purple-600 dark:text-purple-400"></i> {t('training_supp_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('training_supp_desc')}</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                                        <input type="checkbox" checked={suplementosEntrenamiento.creatina}
-                                            onChange={(e) => handleSuplementoEntrenamientoChange('creatina', e.target.checked)}
-                                            class="rounded accent-brand-600" /> {t('training_supp_creatine')}
-                                    </label>
-                                    {suplementosEntrenamiento.creatina && (
-                                        <div class="apple-reveal pl-6">
-                                            <div class="flex items-center gap-2 mt-1">
-                                                <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
-                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                    class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
-                                                <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
-                                            </div>
-                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
-                                                <input type="checkbox" checked={suplementosEntrenamiento.creatinaEtiquetaGenerica !== false}
-                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaEtiquetaGenerica', e.target.checked)}
-                                                    class="rounded accent-brand-600" />
-                                                {t('ffq_generic_label')}
-                                            </label>
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                                        <input type="checkbox" checked={suplementosEntrenamiento.usaProteinaPolvo}
-                                            onChange={(e) => handleSuplementoEntrenamientoChange('usaProteinaPolvo', e.target.checked)}
-                                            class="rounded accent-brand-600" /> {t('training_supp_protein')}
-                                    </label>
-                                    {suplementosEntrenamiento.usaProteinaPolvo && (
-                                        <div class="apple-reveal pl-6 space-y-2 mt-1">
-                                            <div>
-                                                <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_protein_type')}</label>
-                                                <select value={suplementosEntrenamiento.proteinaPolvoTipo}
-                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoTipo', e.target.value)}
-                                                    class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
-                                                    <option value="whey_hidrolizada">{t('protein_type_whey_hidrolizada')}</option>
-                                                    <option value="whey_aislada">{t('protein_type_whey_aislada')}</option>
-                                                    <option value="whey_concentrada">{t('protein_type_whey_concentrada')}</option>
-                                                    <option value="caseina">{t('protein_type_caseina')}</option>
-                                                    <option value="huevo">{t('protein_type_huevo')}</option>
-                                                    <option value="carne">{t('protein_type_carne')}</option>
-                                                    <option value="soja">{t('protein_type_soja')}</option>
-                                                    <option value="chicharo">{t('protein_type_chicharo')}</option>
-                                                    <option value="mix_vegetal">{t('protein_type_mix_vegetal')}</option>
-                                                </select>
-                                            </div>
-                                            <div class="grid grid-cols-3 gap-2">
-                                                <div>
-                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_days_week')}</label>
-                                                    <select value={suplementosEntrenamiento.proteinaPolvoDiasPorSemana}
-                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoDiasPorSemana', parseInt(e.target.value))}
-                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
-                                                        <option value={0}>{t('ffq_no_consume')}</option>
-                                                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_times_day')}</label>
-                                                    <select value={suplementosEntrenamiento.proteinaPolvoVecesPorDia}
-                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoVecesPorDia', parseInt(e.target.value))}
-                                                        disabled={suplementosEntrenamiento.proteinaPolvoDiasPorSemana === 0}
-                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
-                                                        {[1,2,3].map(n => <option key={n} value={n}>{n}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_grams_portion')}</label>
-                                                    <input type="number" min="0" step="1" value={suplementosEntrenamiento.proteinaPolvoGramosPorcion}
-                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoGramosPorcion', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
-                                                </div>
-                                            </div>
-                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
-                                                <input type="checkbox" checked={suplementosEntrenamiento.proteinaPolvoEtiquetaGenerica !== false}
-                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEtiquetaGenerica', e.target.checked)}
-                                                    class="rounded accent-brand-600" />
-                                                {t('ffq_generic_label')}
-                                            </label>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD: EXPOSICIÓN SOLAR */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-sun text-amber-600 dark:text-amber-400"></i> {t('solar_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('solar_desc')}</p>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_days_week')}</label>
-                                    <select value={exposicionSolar.diasPorSemana} onChange={(e) => handleExposicionChange('diasPorSemana', parseInt(e.target.value))}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        {[0,1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_minutes')}</label>
-                                    <input type="number" min="0" max="180" value={exposicionSolar.minutosPorSesion}
-                                        onChange={(e) => handleExposicionChange('minutosPorSesion', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_schedule')}</label>
-                                    <select value={exposicionSolar.horario} onChange={(e) => handleExposicionChange('horario', e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="pico">{t('solar_schedule_peak')}</option>
-                                        <option value="no_pico">{t('solar_schedule_offpeak')}</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_body_surface')}</label>
-                                    <select value={exposicionSolar.superficieCorporal} onChange={(e) => handleExposicionChange('superficieCorporal', e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="minima">{t('solar_surface_minimal')}</option>
-                                        <option value="parcial">{t('solar_surface_partial')}</option>
-                                        <option value="amplia">{t('solar_surface_wide')}</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_phototype')}</label>
-                                    <select value={exposicionSolar.fototipo} onChange={(e) => handleExposicionChange('fototipo', e.target.value)}
-                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
-                                        <option value="I">{t('phototype_I')}</option>
-                                        <option value="II">{t('phototype_II')}</option>
-                                        <option value="III">{t('phototype_III')}</option>
-                                        <option value="IV">{t('phototype_IV')}</option>
-                                        <option value="V">{t('phototype_V')}</option>
-                                        <option value="VI">{t('phototype_VI')}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="text-[10px] text-slate-400 mt-3 italic">{t('solar_no_sunscreen_note')}</p>
-                        </div>
-
-                        {/* CARD: SARC-F */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-person-walking text-pink-600 dark:text-pink-400"></i> {t('sarcf_title')}</h3>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('sarcf_desc')}</p>
-                            <div class="space-y-4">
-                                {PREGUNTAS_SARC_F.map(pregunta => (
-                                    <div key={pregunta.id}>
-                                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">{t(pregunta.nombreKey)}</label>
-                                        <select value={respuestasSarcF[pregunta.id] ?? ''} onChange={(e) => handleSarcFChange(pregunta.id, parseInt(e.target.value))}
-                                            class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-800 dark:text-slate-100">
-                                            <option value="" disabled>{t('sarcf_select_placeholder')}</option>
-                                            {pregunta.opciones.map(op => <option key={op.valor} value={op.valor}>{t(op.key)}</option>)}
-                                        </select>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-
-                        {/* CARD: CUESTIONARIO ÚNICO DE FRECUENCIA DE CONSUMO */}
+{/* CARD: CUESTIONARIO ÚNICO DE FRECUENCIA DE CONSUMO */}
                         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
                             <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-utensils text-cyan-600 dark:text-cyan-400"></i> {t('ffq_unified_title')}</h3>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('ffq_unified_subtitle')}</p>
@@ -1788,7 +1468,367 @@ function App() {
                             </div>
                         </div>
 
-                        {/* GEOGRAFÍA Y PROTECCIÓN SOLAR (v6.0) */}
+                        {/* ---------- PASO 3 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">3</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-capsules text-brand-600 dark:text-brand-400 text-sm"></i> {t('step3_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step3_desc')}</p>
+                            </div>
+                        </div>
+
+{/* CARD: SUPLEMENTACIÓN DE CALCIO */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-pills text-teal-600 dark:text-teal-400"></i> {t('supp_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('supp_desc')}</p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('supp_type_label')}</label>
+                                    <select value={suplementoCalcio.tipoId} onChange={(e) => handleSuplementoCalcioChange('tipoId', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="ninguno">{t('supp_none')}</option>
+                                        <option value="carbonato">{t('supp_type_carbonate')}</option>
+                                        <option value="citrato">{t('supp_type_citrate')}</option>
+                                        <option value="otro">{t('supp_type_other')}</option>
+                                    </select>
+                                </div>
+                                {suplementoCalcio.tipoId !== 'ninguno' && (
+                                    <div class="apple-reveal grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_mg_day')}</label>
+                                            <input type="number" min="0" step="50" value={suplementoCalcio.mgPorDia}
+                                                onChange={(e) => handleSuplementoCalcioChange('mgPorDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_times_day')}</label>
+                                            <select value={suplementoCalcio.vecesPorDia} onChange={(e) => handleSuplementoCalcioChange('vecesPorDia', parseInt(e.target.value))}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+                                                <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_days_week')}</label>
+                                            <select value={suplementoCalcio.diasPorSemana} onChange={(e) => handleSuplementoCalcioChange('diasPorSemana', parseInt(e.target.value))}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+                                                {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                                {suplementoCalcio.tipoId === 'citrato' && (
+                                    <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">{t('supp_citrate_note')}</p>
+                                )}
+                                {suplementoCalcio.tipoId !== 'ninguno' && (
+                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                        <input type="checkbox" checked={suplementoCalcio.etiquetaGenerica !== false}
+                                            onChange={(e) => handleSuplementoCalcioChange('etiquetaGenerica', e.target.checked)}
+                                            class="rounded accent-brand-600" />
+                                        {t('ffq_generic_label')}
+                                    </label>
+                                )}
+
+                                <div class="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800">
+                                    <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('modifiers_title')}</h4>
+                                    <label class="flex items-start gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-3">
+                                        <input type="checkbox" checked={modificadores.usaIBP} onChange={(e) => handleModificadorChange('usaIBP', e.target.checked)} class="rounded accent-brand-600 mt-0.5" />
+                                        <span>{t('modifier_ppi')}</span>
+                                    </label>
+
+                                    {/* MOMENTO DE LA TOMA (v6.0). El factor de los
+                                        inhibidores proviene de estudios en ayuno; con
+                                        comida la penalización casi desaparece porque el
+                                        alimento estimula la acidez que el carbonato
+                                        necesita. Aplicar el factor de ayuno a todo el
+                                        mundo sobrestima el problema. */}
+                                    {suplementoCalcio.tipoId !== 'ninguno' && (
+                                        <div class="mb-3">
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_timing_label')}</label>
+                                            <select value={modificadores.momentoToma} onChange={(e) => handleModificadorChange('momentoToma', e.target.value)}
+                                                class="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                                {MOMENTOS_TOMA_SUPLEMENTO.map(m => <option key={m.id} value={m.id}>{t(m.key)}</option>)}
+                                            </select>
+                                            {modificadores.usaIBP && suplementoCalcio.tipoId === 'carbonato' && (
+                                                <p class="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-semibold">
+                                                    {modificadores.momentoToma === 'ayuno' ? t('supp_timing_warn_fasting') : t('supp_timing_ok_meal')}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* AGUA DE CONSUMO (v6.0). Fuente de calcio que los
+                                        cuestionarios de frecuencia ignoran por sistema y
+                                        que puede aportar 100-300 mg/día con absorción
+                                        comparable a la de la leche. */}
+                                    <div class="mb-3">
+                                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('water_label')}</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <select value={agua.tipo} onChange={(e) => setAgua(prev => ({ ...prev, tipo: e.target.value }))}
+                                                class="px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                                {TIPOS_AGUA.map(w => <option key={w.id} value={w.id}>{t(w.key)}</option>)}
+                                            </select>
+                                            <input type="number" min="0" step="0.25" value={agua.litrosPorDia}
+                                                onChange={(e) => setAgua(prev => ({ ...prev, litrosPorDia: e.target.value }))}
+                                                placeholder={t('water_liters_placeholder')}
+                                                class="px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                                        </div>
+                                        {agua.tipo === 'personalizada' && (
+                                            <input type="number" min="0" step="1" value={agua.mgPorLitro}
+                                                onChange={(e) => setAgua(prev => ({ ...prev, mgPorLitro: e.target.value }))}
+                                                placeholder={t('water_mgl_placeholder')}
+                                                class="mt-2 w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800" />
+                                        )}
+                                        {resultadosCalcio.aguaMgPorDia > 0 && (
+                                            <p class="text-[10px] text-slate-500 mt-1">
+                                                {t('water_contributes')}: <span class="font-bold">{resultadosCalcio.aguaMgPorDia} mg/d</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                    {calcioConModificadores.alertaIBPCarbonato && (
+                                        <p class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold mb-3 leading-relaxed">{t('alert_ppi_carbonate')}</p>
+                                    )}
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('modifier_sodium')}</label>
+                                            <select value={modificadores.nivelSodio} onChange={(e) => handleModificadorChange('nivelSodio', e.target.value)}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                <option value="bajo">{t('sodium_low')}</option>
+                                                <option value="medio">{t('sodium_medium')}</option>
+                                                <option value="alto">{t('sodium_high')}</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('modifier_coffee')}</label>
+                                            <input type="number" min="0" max="15" value={modificadores.tazasCafeDia}
+                                                onChange={(e) => handleModificadorChange('tazasCafeDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100" />
+                                        </div>
+                                    </div>
+                                    {calcioConModificadores.perdidas.perdidaTotal > 0 && (
+                                        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{t('modifier_losses').replace('{total}', calcioConModificadores.perdidas.perdidaTotal).replace('{na}', calcioConModificadores.perdidas.perdidaSodio).replace('{caf}', calcioConModificadores.perdidas.perdidaCafeina)}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+{/* CARD: SUPLEMENTACIÓN DE VITAMINA D */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-capsules text-amber-600 dark:text-amber-400"></i> {t('vitd_supp_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('vitd_supp_desc')}</p>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('vitd_supp_form_label')}</label>
+                                    <select value={suplementoVitD.forma} onChange={(e) => handleSuplementoVitDChange('forma', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="ninguna">{t('vitd_supp_none')}</option>
+                                        {FORMAS_SUPLEMENTO_VITD.map(f => <option key={f.id} value={f.id}>{t(f.key)}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Los campos aparecen en cuanto se elige una forma. El
+                                    envoltorio NO puede depender de que la dosis ya exista:
+                                    estos campos son la única manera de introducirla. */}
+                                {suplementoVitD.forma !== 'ninguna' && (
+                                    <div class="apple-reveal grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('vitd_supp_ui_day')}</label>
+                                            <input type="text" inputMode="decimal" placeholder={t('vitd_supp_ui_placeholder')} value={suplementoVitD.uiPorDia}
+                                                onChange={(e) => handleSuplementoVitDChange('uiPorDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100" />
+                                            {parseFloat(suplementoVitD.uiPorDia) > 0 && (
+                                                <p class="text-[10px] text-slate-400 mt-1">{t('vitd_supp_equals_mcg').replace('{mcg}', Math.round((parseFloat(suplementoVitD.uiPorDia) / 40) * 10) / 10)}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('supp_days_week')}</label>
+                                            <select value={suplementoVitD.diasPorSemana} onChange={(e) => handleSuplementoVitDChange('diasPorSemana', parseInt(e.target.value))}
+                                                class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                {[0,1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {suplementoVitD.forma === 'desconocida' && (
+                                    <p class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-relaxed">{t('vitd_supp_unknown_note')}</p>
+                                )}
+                                {parseFloat(suplementoVitD.uiPorDia) > 0 && Number(suplementoVitD.diasPorSemana) > 0 && (
+                                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                                        <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                                            {t('vitd_supp_contribution')
+                                                .replace('{ui}', Math.round(resultadoVitDDieta.suplEq * 40))
+                                                .replace('{mcg}', resultadoVitDDieta.suplEq)}
+                                        </p>
+                                    </div>
+                                )}
+                                {suplementoVitD.forma !== 'ninguna' && (
+                                    <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                        <input type="checkbox" checked={suplementoVitD.etiquetaGenerica !== false}
+                                            onChange={(e) => handleSuplementoVitDChange('etiquetaGenerica', e.target.checked)}
+                                            class="rounded accent-brand-600" />
+                                        {t('ffq_generic_label')}
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
+{/* CARD: SUPLEMENTOS DE ENTRENAMIENTO (creatina y proteína en polvo) */}
+                        {/* Variables de control para el estudio, no alimentan el motor CARDA. */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-purple-600 dark:text-purple-400"></i> {t('training_supp_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('training_supp_desc')}</p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                        <input type="checkbox" checked={suplementosEntrenamiento.creatina}
+                                            onChange={(e) => handleSuplementoEntrenamientoChange('creatina', e.target.checked)}
+                                            class="rounded accent-brand-600" /> {t('training_supp_creatine')}
+                                    </label>
+                                    {suplementosEntrenamiento.creatina && (
+                                        <div class="apple-reveal pl-6">
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <input type="number" min="0" step="0.5" value={suplementosEntrenamiento.creatinaGramosDia}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaGramosDia', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                    class="w-20 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                                <span class="text-[10px] text-slate-500">{t('training_supp_g_day')}</span>
+                                            </div>
+                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+                                                <input type="checkbox" checked={suplementosEntrenamiento.creatinaEtiquetaGenerica !== false}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('creatinaEtiquetaGenerica', e.target.checked)}
+                                                    class="rounded accent-brand-600" />
+                                                {t('ffq_generic_label')}
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                        <input type="checkbox" checked={suplementosEntrenamiento.usaProteinaPolvo}
+                                            onChange={(e) => handleSuplementoEntrenamientoChange('usaProteinaPolvo', e.target.checked)}
+                                            class="rounded accent-brand-600" /> {t('training_supp_protein')}
+                                    </label>
+                                    {suplementosEntrenamiento.usaProteinaPolvo && (
+                                        <div class="apple-reveal pl-6 space-y-2 mt-1">
+                                            <div>
+                                                <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_protein_type')}</label>
+                                                <select value={suplementosEntrenamiento.proteinaPolvoTipo}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoTipo', e.target.value)}
+                                                    class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100">
+                                                    <option value="whey_hidrolizada">{t('protein_type_whey_hidrolizada')}</option>
+                                                    <option value="whey_aislada">{t('protein_type_whey_aislada')}</option>
+                                                    <option value="whey_concentrada">{t('protein_type_whey_concentrada')}</option>
+                                                    <option value="caseina">{t('protein_type_caseina')}</option>
+                                                    <option value="huevo">{t('protein_type_huevo')}</option>
+                                                    <option value="carne">{t('protein_type_carne')}</option>
+                                                    <option value="soja">{t('protein_type_soja')}</option>
+                                                    <option value="chicharo">{t('protein_type_chicharo')}</option>
+                                                    <option value="mix_vegetal">{t('protein_type_mix_vegetal')}</option>
+                                                </select>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_days_week')}</label>
+                                                    <select value={suplementosEntrenamiento.proteinaPolvoDiasPorSemana}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoDiasPorSemana', parseInt(e.target.value))}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                        <option value={0}>{t('ffq_no_consume')}</option>
+                                                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('ffq_times_day')}</label>
+                                                    <select value={suplementosEntrenamiento.proteinaPolvoVecesPorDia}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoVecesPorDia', parseInt(e.target.value))}
+                                                        disabled={suplementosEntrenamiento.proteinaPolvoDiasPorSemana === 0}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                                                        {[1,2,3].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('training_supp_grams_portion')}</label>
+                                                    <input type="number" min="0" step="1" value={suplementosEntrenamiento.proteinaPolvoGramosPorcion}
+                                                        onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoGramosPorcion', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                        class="w-full text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-100" />
+                                                </div>
+                                            </div>
+                                            <label class="flex items-center gap-1.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                                <input type="checkbox" checked={suplementosEntrenamiento.proteinaPolvoEtiquetaGenerica !== false}
+                                                    onChange={(e) => handleSuplementoEntrenamientoChange('proteinaPolvoEtiquetaGenerica', e.target.checked)}
+                                                    class="rounded accent-brand-600" />
+                                                {t('ffq_generic_label')}
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ---------- PASO 4 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">4</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-sun text-brand-600 dark:text-brand-400 text-sm"></i> {t('step4_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step4_desc')}</p>
+                            </div>
+                        </div>
+
+{/* CARD: EXPOSICIÓN SOLAR */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-sun text-amber-600 dark:text-amber-400"></i> {t('solar_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('solar_desc')}</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_days_week')}</label>
+                                    <select value={exposicionSolar.diasPorSemana} onChange={(e) => handleExposicionChange('diasPorSemana', parseInt(e.target.value))}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        {[0,1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_minutes')}</label>
+                                    <input type="number" min="0" max="180" value={exposicionSolar.minutosPorSesion}
+                                        onChange={(e) => handleExposicionChange('minutosPorSesion', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_schedule')}</label>
+                                    <select value={exposicionSolar.horario} onChange={(e) => handleExposicionChange('horario', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="pico">{t('solar_schedule_peak')}</option>
+                                        <option value="no_pico">{t('solar_schedule_offpeak')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_body_surface')}</label>
+                                    <select value={exposicionSolar.superficieCorporal} onChange={(e) => handleExposicionChange('superficieCorporal', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="minima">{t('solar_surface_minimal')}</option>
+                                        <option value="parcial">{t('solar_surface_partial')}</option>
+                                        <option value="amplia">{t('solar_surface_wide')}</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('solar_phototype')}</label>
+                                    <select value={exposicionSolar.fototipo} onChange={(e) => handleExposicionChange('fototipo', e.target.value)}
+                                        class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100">
+                                        <option value="I">{t('phototype_I')}</option>
+                                        <option value="II">{t('phototype_II')}</option>
+                                        <option value="III">{t('phototype_III')}</option>
+                                        <option value="IV">{t('phototype_IV')}</option>
+                                        <option value="V">{t('phototype_V')}</option>
+                                        <option value="VI">{t('phototype_VI')}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-3 italic">{t('solar_no_sunscreen_note')}</p>
+                        </div>
+
+{/* GEOGRAFÍA Y PROTECCIÓN SOLAR (v6.0) */}
                         {/* La v3.1 fijaba el índice UV a la latitud de Panamá, así que
                             un participante en Helsinki en diciembre recibía la misma
                             estimación de síntesis cutánea que uno en Ciudad de Panamá
@@ -1852,13 +1892,137 @@ function App() {
                             </div>
                         </div>
 
-                        {/* PANEL BIOQUÍMICO (v6.0) */}
+                        {/* ---------- PASO 5 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">5</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-person-running text-brand-600 dark:text-brand-400 text-sm"></i> {t('step5_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step5_desc')}</p>
+                            </div>
+                        </div>
+
+{/* CARD: EJERCICIO */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-dumbbell text-emerald-600 dark:text-emerald-400"></i> {t('exercise_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('exercise_desc')}</p>
+                            <div class="space-y-3">
+                                <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">{t('exercise_aerobic_label')}</label>
+                                    <p class="text-[10px] text-slate-400 mb-2">{t('exercise_aerobic_examples')}</p>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" min="0" max="40" step="0.5" value={ejercicio.horasAerobicoSemana}
+                                            onChange={(e) => handleEjercicioChange('horasAerobicoSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                            class="w-24 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
+                                        <span class="text-xs text-slate-500">{t('exercise_hours_week')}</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+                                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">{t('exercise_strength_label')}</label>
+                                    <p class="text-[10px] text-slate-400 mb-2">{t('exercise_strength_examples')}</p>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" min="0" max="7" value={ejercicio.diasFuerzaSemana}
+                                                onChange={(e) => handleEjercicioChange('diasFuerzaSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-16 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
+                                            <span class="text-xs text-slate-500">{t('exercise_days_week')}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" min="0" max="20" step="0.5" value={ejercicio.horasFuerzaSemana}
+                                                onChange={(e) => handleEjercicioChange('horasFuerzaSemana', limpiarNumero(e.target.value))} onFocus={alEnfocarNumero}
+                                                class="w-16 px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-slate-800 dark:text-slate-100" />
+                                            <span class="text-xs text-slate-500">{t('exercise_hours_week')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-bold text-slate-500 pt-1">
+                                    <span>{t('exercise_total_label')}</span>
+                                    <span class="text-brand-600 dark:text-brand-400">{resultadoEjercicio.horasTotalesSemana} {t('exercise_hours_week')}</span>
+                                </div>
+                            </div>
+                        </div>
+
+{/* CARD: SARC-F */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-2"><i class="fa-solid fa-person-walking text-pink-600 dark:text-pink-400"></i> {t('sarcf_title')}</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('sarcf_desc')}</p>
+                            <div class="space-y-4">
+                                {PREGUNTAS_SARC_F.map(pregunta => (
+                                    <div key={pregunta.id}>
+                                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">{t(pregunta.nombreKey)}</label>
+                                        <select value={respuestasSarcF[pregunta.id] ?? ''} onChange={(e) => handleSarcFChange(pregunta.id, parseInt(e.target.value))}
+                                            class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-800 dark:text-slate-100">
+                                            <option value="" disabled>{t('sarcf_select_placeholder')}</option>
+                                            {pregunta.opciones.map(op => <option key={op.valor} value={op.valor}>{t(op.key)}</option>)}
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ---------- PASO 6 ---------- */}
+                        <div class="paso-cabecera flex items-start gap-3 pt-2">
+                            <span class="shrink-0 w-8 h-8 rounded-xl bg-brand-600 text-white text-sm font-extrabold flex items-center justify-center shadow-sm">6</span>
+                            <div class="pt-0.5">
+                                <h2 class="text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+                                    <i class="fa-solid fa-vial text-brand-600 dark:text-brand-400 text-sm"></i> {t('step6_title')}
+                                </h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{t('step6_desc')}</p>
+                            </div>
+                        </div>
+
+{/* PANEL BIOQUÍMICO (v6.0) */}
                         <TarjetaBiomarcadores t={t} lab={lab} onChange={handleLabChange} panel={panelBioquimico} />
 
                     </section>
 
-                    {/* ===================== COLUMNA DERECHA: RESULTADOS ===================== */}
-                    <section class="lg:col-span-7 flex flex-col gap-8">
+                    {/* ===================== DIVISORIA ===================== */}
+                    <div id="resultados" class="scroll-mt-24 pt-4">
+                        <div class="flex items-center gap-4">
+                            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-slate-300 dark:to-slate-700"></div>
+                            <div class="text-center">
+                                <h2 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">{t('results_heading')}</h2>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t('results_subheading')}</p>
+                            </div>
+                            <div class="h-px flex-1 bg-gradient-to-l from-transparent via-slate-300 dark:via-slate-700 to-slate-300 dark:to-slate-700"></div>
+                        </div>
+                        <div class="flex justify-center mt-3 no-print">
+                            <a href="#cuestionario" class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                                <i class="fa-solid fa-arrow-up mr-1"></i>{t('results_back_to_form')}
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* ===================== RESULTADOS (al final) ===================== */}
+                    <section class="flex flex-col gap-6">
+
+                        {/* CALIDAD DEL DATO */}
+                        {/* Va PRIMERO a propósito: si el cuestionario está incompleto,
+                            todo lo que viene después hereda ese problema, y el evaluador
+                            tiene que verlo antes de leer cualquier cifra. */}
+                        <div class={'rounded-2xl border p-4 ' + (plausibilidad.plausible
+                            ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/60 dark:bg-emerald-950/20'
+                            : 'border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20')}>
+                            {/* Plausibilidad del cuestionario */}
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{t('plaus_title')}</p>
+                            {plausibilidad.plausible ? (
+                                <p class="text-xs text-emerald-600 font-semibold">
+                                    <i class="fa-solid fa-check mr-1"></i>{t('plaus_ok').replace('{n}', plausibilidad.alimentosDeclarados)}
+                                </p>
+                            ) : (
+                                <ul class="space-y-1">
+                                    {plausibilidad.banderas.map(b => (
+                                        <li key={b} class="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                                            <i class="fa-solid fa-flag mr-1 text-[9px]"></i>{t('plaus_' + b)}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('plaus_note')}</p>
+                            </div>
+                        </div>
 
                         {/* DASHBOARD DE MÉTRICAS — CALCIO */}
                         <div>
@@ -1987,12 +2151,6 @@ function App() {
                                         <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">{t('alert_split_dose')}</p>
                                     </div>
                                 )}
-                                {resultadoVitDDieta.proporcionD2 > 50 && (
-                                    <div class="p-3 rounded-xl border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 flex items-start gap-3">
-                                        <i class="fa-solid fa-circle-exclamation text-amber-500 mt-0.5"></i>
-                                        <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">{t('alert_d2_dominant').replace('{pct}', resultadoVitDDieta.proporcionD2)}</p>
-                                    </div>
-                                )}
                                 {resultadoVitDDieta.excedeUL && (
                                     <div class="p-3 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/20 flex items-start gap-3">
                                         <i class="fa-solid fa-triangle-exclamation text-rose-500 mt-0.5"></i>
@@ -2059,6 +2217,148 @@ function App() {
                                     <p class="text-[10px] mt-2 opacity-75">{t('vitd_dieta_breakdown').replace('{dieta}', resultadoVitDDieta.mcgPromedioDiaDieta).replace('{supp}', resultadoVitDDieta.mcgPromedioDiaSuplemento)}</p>
                                 </div>
                             </div>
+
+                            {/* Entrada total de vitamina D */}
+                            {entradaTotalVitD && (
+                                <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                    <div class="flex items-baseline justify-between mb-1">
+                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{t('vitd_total_input')}</span>
+                                        <span class="text-lg font-extrabold">{entradaTotalVitD.uiTotal}<span class="text-[10px] font-semibold"> UI/d</span></span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500">
+                                        {t('vitd_from_diet')} {entradaTotalVitD.uiDieta} · {t('vitd_from_supp')} {entradaTotalVitD.uiSuplemento} · {t('vitd_from_skin')} {entradaTotalVitD.uiCutanea}
+                                        {entradaTotalVitD.proporcionCutanea > 0 ? ` (${entradaTotalVitD.proporcionCutanea}% ${t('vitd_skin_share')})` : ''}
+                                    </div>
+                                    <p class="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 leading-relaxed font-semibold">{t('vitd_total_input_warning')}</p>
+                                    {resultadoVitDDieta.ajusteTamanoAplicado && (
+                                        <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                                            {t('vitd_bw_adjusted')}: {resultadoVitDDieta.meta} → {resultadoVitDDieta.metaAjustada} mcg/d
+                                            {' '}(×{resultadoVitDDieta.factorTamanoCorporal}, {t(resultadoVitDDieta.tramoIMCKey)})
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                        </div>
+
+                        {/* PROTEÍNA Y MASA MUSCULAR */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-dumbbell text-purple-600 dark:text-purple-400"></i> {t('results_protein_muscle')}
+                            </h3>
+                            {/* Proteína utilizable */}
+                        {!resultadoProteina.sinPeso && (
+                            <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
+                                        <p class="text-[9px] text-slate-400 uppercase tracking-wider">{t('prot_raw')}</p>
+                                        <p class="text-sm font-extrabold">{resultadoProteina.gPorKg}<span class="text-[9px]"> g/kg</span></p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
+                                        <p class="text-[9px] text-slate-400 uppercase tracking-wider">{t('prot_usable')}</p>
+                                        <p class="text-sm font-extrabold">{resultadoProteina.gPorKgUtilizable}<span class="text-[9px]"> g/kg</span></p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
+                                        <p class="text-[9px] text-slate-400 uppercase tracking-wider">DIAAS</p>
+                                        <p class="text-sm font-extrabold">{resultadoProteina.diaasMedio !== null ? resultadoProteina.diaasMedio : '—'}</p>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{t('prot_usable_note')}</p>
+                                {resultadoProteina.alertaLeucina && (
+                                    <p class="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 font-semibold leading-relaxed">
+                                        {t('prot_leucine_warning').replace('{g}', resultadoProteina.mejorComidaLeucinaG)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                            {/* SARC-CalF */}
+                        {resultadoSarcopenia.puntajeSarcCalF !== null && (
+                            <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">SARC-CalF</span>
+                                    <span class="text-sm font-extrabold">
+                                        {resultadoSarcopenia.puntajeSarcCalF}<span class="text-[10px] font-semibold">/{resultadoSarcopenia.puntajeMaximoSarcCalF}</span>
+                                        <span class={'ml-2 text-[10px] font-bold uppercase ' + (resultadoSarcopenia.riesgoSarcCalF ? 'text-rose-600' : 'text-emerald-600')}>
+                                            {resultadoSarcopenia.riesgoSarcCalF ? t('sarccalf_above') : t('sarccalf_below')}
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 mt-1">
+                                    {t('sarccalf_cutoff')} ≥{resultadoSarcopenia.umbralSarcCalF} ·
+                                    {' '}{t('calf_measured')} {resultadoSarcopenia.pantorrillaMedidaCm} cm
+                                    {resultadoSarcopenia.ajusteIMCAplicado !== 0
+                                        ? ` → ${resultadoSarcopenia.pantorrillaAjustadaCm} cm (${t('calf_bmi_adjusted')} ${resultadoSarcopenia.ajusteIMCAplicado > 0 ? '+' : ''}${resultadoSarcopenia.ajusteIMCAplicado})`
+                                        : ''}
+                                    {' '}· {t('calf_cutoff')} {resultadoSarcopenia.corteAplicadoCm} cm
+                                </div>
+                                {!resultadoSarcopenia.ajustePorIMCDisponible && (
+                                    <p class="text-[10px] text-amber-600 mt-1">{t('calf_needs_bmi')}</p>
+                                )}
+                            </div>
+                        )}
+                        </div>
+
+                        {/* SALUD ÓSEA */}
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-bone text-slate-600 dark:text-slate-300"></i> {t('results_bone_health')}
+                            </h3>
+                            {/* Riesgo óseo con desglose */}
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{t('bone_composite_title')}</span>
+                                <span class="text-sm font-extrabold">
+                                    {resultadoOseo.puntaje}<span class="text-[10px] font-semibold">/{resultadoOseo.puntajeMaximo}</span>
+                                    <span class="text-[10px] text-slate-400"> ({resultadoOseo.fraccionDelMaximo}%)</span>
+                                </span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 mt-1">
+                                {t('bone_behavioural')} {resultadoOseo.puntajeConductual}/{resultadoOseo.puntajeMaximoConductual}
+                                {resultadoOseo.conBioquimica
+                                    ? ` · ${t('bone_biochemical')} ${resultadoOseo.puntajeBioquimico}/${resultadoOseo.puntajeMaximoBioquimico} (${resultadoOseo.analitosDisponibles} ${t('bone_analytes')})`
+                                    : ` · ${t('bone_no_labs')}`}
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('bone_fraction_note')}</p>
+                            <p class="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-semibold leading-relaxed">{t('bone_heuristic_note')}</p>
+                        </div>
+                            {/* Índices validados de cribado óseo */}
+                        <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('bone_indices_title')}</p>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <div class="font-semibold text-slate-700 dark:text-slate-300">OST</div>
+                                    {resultadoOST.aplicable ? (
+                                        <div>
+                                            <span class="font-extrabold text-base">{resultadoOST.indice}</span>
+                                            <span class={'ml-2 text-[10px] font-bold uppercase ' +
+                                                (resultadoOST.colorKey === 'rose' ? 'text-rose-600' : resultadoOST.colorKey === 'amber' ? 'text-amber-600' : 'text-emerald-600')}>
+                                                {t('bone_' + resultadoOST.categoria)}
+                                            </span>
+                                        </div>
+                                    ) : <div class="text-[10px] text-slate-400">{t(resultadoOST.motivoKey)}</div>}
+                                    <div class="text-[10px] text-slate-400 mt-0.5">{t('ost_source')}</div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-700 dark:text-slate-300">ORAI</div>
+                                    {resultadoORAI.aplicable ? (
+                                        <div>
+                                            <span class="font-extrabold text-base">{resultadoORAI.puntaje}</span>
+                                            <span class="text-[10px] text-slate-400">/{resultadoORAI.puntajeMaximo}</span>
+                                            <span class={'ml-2 text-[10px] font-bold uppercase ' + (resultadoORAI.superaCorte ? 'text-amber-600' : 'text-emerald-600')}>
+                                                {resultadoORAI.superaCorte ? t('orai_above') : t('orai_below')}
+                                            </span>
+                                        </div>
+                                    ) : <div class="text-[10px] text-slate-400">{t(resultadoORAI.motivoKey)}</div>}
+                                    <div class="text-[10px] text-slate-400 mt-0.5">{t('orai_source')}</div>
+                                </div>
+                            </div>
+                            <label class="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-3">
+                                <input type="checkbox" checked={perfil.usaEstrogenos}
+                                    onChange={(e) => handleParticipanteEstrogenos(e.target.checked)}
+                                    class="rounded accent-brand-600 mt-0.5" />
+                                <span>{t('orai_estrogen')}</span>
+                            </label>
+                        </div>
                         </div>
 
                         {/* INTERPRETACIÓN DE LABORATORIO */}
@@ -2117,164 +2417,6 @@ function App() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* ===== MÉTRICAS NUEVAS DE LA v6.0 ===== */}
-                        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-                            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-1">
-                                <i class="fa-solid fa-microscope text-brand-600"></i> {t('v6_metrics_title')}
-                            </h3>
-                            <p class="text-[10px] text-slate-400 mb-4">{t('v6_metrics_desc')}</p>
-
-                            {/* Entrada total de vitamina D */}
-                            {entradaTotalVitD && (
-                                <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                    <div class="flex items-baseline justify-between mb-1">
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{t('vitd_total_input')}</span>
-                                        <span class="text-lg font-extrabold">{entradaTotalVitD.uiTotal}<span class="text-[10px] font-semibold"> UI/d</span></span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-500">
-                                        {t('vitd_from_diet')} {entradaTotalVitD.uiDieta} · {t('vitd_from_supp')} {entradaTotalVitD.uiSuplemento} · {t('vitd_from_skin')} {entradaTotalVitD.uiCutanea}
-                                        {entradaTotalVitD.proporcionCutanea > 0 ? ` (${entradaTotalVitD.proporcionCutanea}% ${t('vitd_skin_share')})` : ''}
-                                    </div>
-                                    <p class="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 leading-relaxed font-semibold">{t('vitd_total_input_warning')}</p>
-                                    {resultadoVitDDieta.ajusteTamanoAplicado && (
-                                        <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                                            {t('vitd_bw_adjusted')}: {resultadoVitDDieta.meta} → {resultadoVitDDieta.metaAjustada} mcg/d
-                                            {' '}(×{resultadoVitDDieta.factorTamanoCorporal}, {t(resultadoVitDDieta.tramoIMCKey)})
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Proteína utilizable */}
-                            {!resultadoProteina.sinPeso && (
-                                <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                    <div class="grid grid-cols-3 gap-2 text-center">
-                                        <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
-                                            <p class="text-[9px] text-slate-400 uppercase tracking-wider">{t('prot_raw')}</p>
-                                            <p class="text-sm font-extrabold">{resultadoProteina.gPorKg}<span class="text-[9px]"> g/kg</span></p>
-                                        </div>
-                                        <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
-                                            <p class="text-[9px] text-slate-400 uppercase tracking-wider">{t('prot_usable')}</p>
-                                            <p class="text-sm font-extrabold">{resultadoProteina.gPorKgUtilizable}<span class="text-[9px]"> g/kg</span></p>
-                                        </div>
-                                        <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-950/30">
-                                            <p class="text-[9px] text-slate-400 uppercase tracking-wider">DIAAS</p>
-                                            <p class="text-sm font-extrabold">{resultadoProteina.diaasMedio !== null ? resultadoProteina.diaasMedio : '—'}</p>
-                                        </div>
-                                    </div>
-                                    <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">{t('prot_usable_note')}</p>
-                                    {resultadoProteina.alertaLeucina && (
-                                        <p class="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 font-semibold leading-relaxed">
-                                            {t('prot_leucine_warning').replace('{g}', resultadoProteina.mejorComidaLeucinaG)}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* SARC-CalF */}
-                            {resultadoSarcopenia.puntajeSarcCalF !== null && (
-                                <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                    <div class="flex items-baseline justify-between">
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">SARC-CalF</span>
-                                        <span class="text-sm font-extrabold">
-                                            {resultadoSarcopenia.puntajeSarcCalF}<span class="text-[10px] font-semibold">/{resultadoSarcopenia.puntajeMaximoSarcCalF}</span>
-                                            <span class={'ml-2 text-[10px] font-bold uppercase ' + (resultadoSarcopenia.riesgoSarcCalF ? 'text-rose-600' : 'text-emerald-600')}>
-                                                {resultadoSarcopenia.riesgoSarcCalF ? t('sarccalf_above') : t('sarccalf_below')}
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-500 mt-1">
-                                        {t('sarccalf_cutoff')} ≥{resultadoSarcopenia.umbralSarcCalF} ·
-                                        {' '}{t('calf_measured')} {resultadoSarcopenia.pantorrillaMedidaCm} cm
-                                        {resultadoSarcopenia.ajusteIMCAplicado !== 0
-                                            ? ` → ${resultadoSarcopenia.pantorrillaAjustadaCm} cm (${t('calf_bmi_adjusted')} ${resultadoSarcopenia.ajusteIMCAplicado > 0 ? '+' : ''}${resultadoSarcopenia.ajusteIMCAplicado})`
-                                            : ''}
-                                        {' '}· {t('calf_cutoff')} {resultadoSarcopenia.corteAplicadoCm} cm
-                                    </div>
-                                    {!resultadoSarcopenia.ajustePorIMCDisponible && (
-                                        <p class="text-[10px] text-amber-600 mt-1">{t('calf_needs_bmi')}</p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Índices validados de cribado óseo */}
-                            <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('bone_indices_title')}</p>
-                                <div class="grid grid-cols-2 gap-3 text-xs">
-                                    <div>
-                                        <div class="font-semibold text-slate-700 dark:text-slate-300">OST</div>
-                                        {resultadoOST.aplicable ? (
-                                            <div>
-                                                <span class="font-extrabold text-base">{resultadoOST.indice}</span>
-                                                <span class={'ml-2 text-[10px] font-bold uppercase ' +
-                                                    (resultadoOST.colorKey === 'rose' ? 'text-rose-600' : resultadoOST.colorKey === 'amber' ? 'text-amber-600' : 'text-emerald-600')}>
-                                                    {t('bone_' + resultadoOST.categoria)}
-                                                </span>
-                                            </div>
-                                        ) : <div class="text-[10px] text-slate-400">{t(resultadoOST.motivoKey)}</div>}
-                                        <div class="text-[10px] text-slate-400 mt-0.5">{t('ost_source')}</div>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-slate-700 dark:text-slate-300">ORAI</div>
-                                        {resultadoORAI.aplicable ? (
-                                            <div>
-                                                <span class="font-extrabold text-base">{resultadoORAI.puntaje}</span>
-                                                <span class="text-[10px] text-slate-400">/{resultadoORAI.puntajeMaximo}</span>
-                                                <span class={'ml-2 text-[10px] font-bold uppercase ' + (resultadoORAI.superaCorte ? 'text-amber-600' : 'text-emerald-600')}>
-                                                    {resultadoORAI.superaCorte ? t('orai_above') : t('orai_below')}
-                                                </span>
-                                            </div>
-                                        ) : <div class="text-[10px] text-slate-400">{t(resultadoORAI.motivoKey)}</div>}
-                                        <div class="text-[10px] text-slate-400 mt-0.5">{t('orai_source')}</div>
-                                    </div>
-                                </div>
-                                <label class="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300 mt-3">
-                                    <input type="checkbox" checked={perfil.usaEstrogenos}
-                                        onChange={(e) => handleParticipanteEstrogenos(e.target.checked)}
-                                        class="rounded accent-brand-600 mt-0.5" />
-                                    <span>{t('orai_estrogen')}</span>
-                                </label>
-                            </div>
-
-                            {/* Riesgo óseo con desglose */}
-                            <div class="mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                <div class="flex items-baseline justify-between">
-                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{t('bone_composite_title')}</span>
-                                    <span class="text-sm font-extrabold">
-                                        {resultadoOseo.puntaje}<span class="text-[10px] font-semibold">/{resultadoOseo.puntajeMaximo}</span>
-                                        <span class="text-[10px] text-slate-400"> ({resultadoOseo.fraccionDelMaximo}%)</span>
-                                    </span>
-                                </div>
-                                <div class="text-[10px] text-slate-500 mt-1">
-                                    {t('bone_behavioural')} {resultadoOseo.puntajeConductual}/{resultadoOseo.puntajeMaximoConductual}
-                                    {resultadoOseo.conBioquimica
-                                        ? ` · ${t('bone_biochemical')} ${resultadoOseo.puntajeBioquimico}/${resultadoOseo.puntajeMaximoBioquimico} (${resultadoOseo.analitosDisponibles} ${t('bone_analytes')})`
-                                        : ` · ${t('bone_no_labs')}`}
-                                </div>
-                                <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('bone_fraction_note')}</p>
-                                <p class="text-[10px] text-rose-600 dark:text-rose-400 mt-1 font-semibold leading-relaxed">{t('bone_heuristic_note')}</p>
-                            </div>
-
-                            {/* Plausibilidad del cuestionario */}
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{t('plaus_title')}</p>
-                                {plausibilidad.plausible ? (
-                                    <p class="text-xs text-emerald-600 font-semibold">
-                                        <i class="fa-solid fa-check mr-1"></i>{t('plaus_ok').replace('{n}', plausibilidad.alimentosDeclarados)}
-                                    </p>
-                                ) : (
-                                    <ul class="space-y-1">
-                                        {plausibilidad.banderas.map(b => (
-                                            <li key={b} class="text-xs text-amber-700 dark:text-amber-400 font-semibold">
-                                                <i class="fa-solid fa-flag mr-1 text-[9px]"></i>{t('plaus_' + b)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                <p class="text-[10px] text-slate-500 mt-1.5 leading-relaxed">{t('plaus_note')}</p>
                             </div>
                         </div>
 
