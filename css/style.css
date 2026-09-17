@@ -1,0 +1,626 @@
+/* ============================================================
+   CalD Risk Screen — capa visual "Apple-style" (v6.0)
+   ------------------------------------------------------------
+   Reescritura completa de la piel visual siguiendo el lenguaje de
+   diseño de Apple (Human Interface Guidelines: System Colors,
+   materiales translúcidos, tipografía SF, curvas de movimiento tipo
+   resorte, "continuous corners") — como si la hubiese construido el
+   equipo de Diseño de Interfaz Humana de Apple sobre esta app ya
+   existente.
+
+   Principio de la v3.0 que se conserva y se profundiza: todo aquí es
+   CSS + configuración de color de Tailwind (ver index.html), nunca
+   marcado ni lógica. app.js, algorithm.js, data.js e i18n.js quedan
+   intactos en su comportamiento, así que las 85 pruebas de
+   validacion.js y la de humo.js siguen pasando igual.
+   ============================================================ */
+
+:root {
+    /* Acento de marca — System Orange de Apple, reutilizado como
+       "tint" único en todos los controles interactivos, igual que
+       una app de Apple usa un solo color de acento consistente. */
+    --accent: #FF9500;
+    --accent-dark: #FF9F0A;
+    --accent-ring: rgba(255, 149, 0, 0.35);
+    --accent-ring-dark: rgba(255, 159, 10, 0.4);
+
+    /* Azul de sistema, reservado para enlaces/foco de checkboxes de
+       procedencia del dato y estados "informativos" puros. */
+    --system-blue: #007AFF;
+    --system-blue-dark: #0A84FF;
+
+    /* Pista (track) de los interruptores en estado apagado —
+       System Gray 4/5, igual que un UISwitch apagado. */
+    --track-off: #D1D1D6;
+    --track-off-dark: #48484A;
+
+    /* Separadores — Apple usa líneas de 1px con opacidad baja sobre
+       el color de la etiqueta, no un gris sólido fijo. */
+    --separator-light: rgba(60, 60, 67, 0.13);
+    --separator-dark: rgba(255, 255, 255, 0.1);
+
+    /* Curvas de movimiento: aproximan un resorte crítico y uno
+       ligeramente subamortiguado sin necesitar una librería de
+       física en JS (como recomienda "Designing Fluid Interfaces",
+       WWDC18). */
+    --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);            /* crítico: llega y se asienta sin rebote */
+    --ease-spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);  /* con leve rebote, solo gestos con impulso */
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sombras estratificadas (dos capas: contacto + elevación), en
+       vez de una sombra plana única — así es como macOS/iOS dan
+       profundidad a una tarjeta sin recurrir a bordes duros. */
+    --shadow-card-light: 0 0.5px 1px rgba(0, 0, 0, 0.045), 0 1px 2px rgba(0, 0, 0, 0.05), 0 12px 28px -12px rgba(0, 0, 0, 0.12);
+    --shadow-card-dark: 0 0.5px 1px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 32px -14px rgba(0, 0, 0, 0.65);
+    --shadow-raised-light: 0 1px 3px rgba(0, 0, 0, 0.08), 0 20px 40px -16px rgba(0, 0, 0, 0.18);
+    --shadow-raised-dark: 0 1px 3px rgba(0, 0, 0, 0.5), 0 20px 44px -16px rgba(0, 0, 0, 0.7);
+    --shadow-btn-light: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px -4px rgba(255, 149, 0, 0.35);
+    --shadow-btn-dark: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px -4px rgba(255, 159, 10, 0.4);
+
+    color-scheme: light;
+}
+:root.dark {
+    /* Los controles nativos (flecha de los <select>, barras de
+       desplazamiento, casillas del sistema) adoptan la paleta
+       oscura automáticamente. */
+    color-scheme: dark;
+}
+
+/* ------------------------------------------------------------
+   Tipografía: fuente del sistema (San Francisco en Apple, su
+   equivalente en cada plataforma en los demás casos), como
+   recomienda Apple antes de recurrir a una tipografía externa — ya
+   trae el ajuste óptico y las tablas de tracking calibradas para
+   cada tamaño (SF Pro Display sobre 20pt, SF Pro Text debajo).
+   ------------------------------------------------------------ */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1;
+    letter-spacing: -0.006em;
+    transition: background-color 320ms var(--ease-standard), color 320ms var(--ease-standard);
+
+    /* "Bloom" de color de fondo: manchas de color muy suaves y fijas,
+       como el fondo de las páginas de producto de Apple.com o de
+       visionOS — dan vida al lienzo neutro sin competir con el
+       contenido, que sigue siendo tarjetas blancas/oscuras opacas. */
+    background-image:
+        radial-gradient(720px 480px at 6% -8%, rgba(255, 149, 0, 0.045), transparent 60%),
+        radial-gradient(760px 520px at 108% 8%, rgba(0, 122, 255, 0.04), transparent 60%),
+        radial-gradient(640px 520px at 50% 115%, rgba(175, 82, 222, 0.03), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+/* El lienzo de la página en sí (no los campos ni paneles internos,
+   que siguen usando slate-50/100 para conservar su contraste sutil
+   contra las tarjetas blancas) se lleva un blanco casi puro — el
+   selector repite la clase de Tailwind para ganarle en especificidad
+   sin depender del orden de las hojas de estilo. */
+body.bg-slate-50 {
+    background-color: #FEFEFE;
+}
+:root.dark body.dark\:bg-slate-950 {
+    background-color: #000000;
+}
+:root.dark body {
+    background-image:
+        radial-gradient(720px 480px at 6% -8%, rgba(255, 159, 10, 0.16), transparent 60%),
+        radial-gradient(760px 520px at 108% 8%, rgba(10, 132, 255, 0.14), transparent 60%),
+        radial-gradient(640px 520px at 50% 115%, rgba(191, 90, 242, 0.12), transparent 60%);
+}
+
+/* Selección de texto e hilo de scroll con el tinte de la app en vez
+   del azul/gris genérico del navegador. */
+::selection {
+    background-color: var(--accent);
+    color: #ffffff;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(142, 142, 147, 0.5) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(142, 142, 147, 0.5);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: rgba(142, 142, 147, 0.75); }
+
+/* Jerarquía tipográfica al estilo "Large Title / Title / Headline /
+   Body / Footnote" de Apple: tracking negativo en texto grande (las
+   letras se separan demasiado al crecer) y positivo en etiquetas
+   pequeñas en mayúsculas (mejora la legibilidad a ese tamaño). */
+h1, .text-2xl, .text-lg { letter-spacing: -0.018em; }
+h3, .font-bold.text-sm { letter-spacing: -0.006em; }
+.uppercase.tracking-wider { letter-spacing: 0.07em; font-weight: 700; }
+
+/* ------------------------------------------------------------
+   Insignias de color por sección: cada tarjeta ya lleva un icono de
+   encabezado en un color distinto (naranja, azul, índigo, verde,
+   turquesa, ámbar, morado, rosa, cian…), como en las categorías de
+   Apple Salud o las filas de Ajustes. En vez de repetir un color de
+   fondo por cada icono en el marcado, aquí se calcula automáticamente
+   con `currentColor`: cada icono recibe un halo tintado con su propio
+   color, que ya trae puesto por su clase `text-*`. Un solo lugar,
+   cualquier color de sección "simplemente funciona".
+   ------------------------------------------------------------ */
+h3 > i.fa-solid:first-child, h4 > i.fa-solid:first-child {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    font-size: 0.72rem;
+    background-color: rgba(120, 120, 128, 0.14); /* respaldo sólido si no hay color-mix() */
+    flex-shrink: 0;
+}
+.dark h3 > i.fa-solid:first-child, .dark h4 > i.fa-solid:first-child {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+@supports (color: color-mix(in srgb, red, blue)) {
+    h3 > i.fa-solid:first-child, h4 > i.fa-solid:first-child {
+        background-color: color-mix(in srgb, currentColor 15%, transparent);
+    }
+    .dark h3 > i.fa-solid:first-child, .dark h4 > i.fa-solid:first-child {
+        background-color: color-mix(in srgb, currentColor 22%, transparent);
+    }
+}
+h4 > i.fa-solid:first-child { width: 22px; height: 22px; font-size: 0.62rem; border-radius: 7px; }
+
+/* ------------------------------------------------------------
+   Movimiento base: todo lo interactivo responde con una curva de
+   resorte crítica en vez de una duración lineal fija, y el color
+   de fondo/borde en modo oscuro cruza suavemente en vez de saltar.
+   ------------------------------------------------------------ */
+button, a, input, select, textarea, label {
+    transition: transform 200ms var(--ease-spring), background-color 200ms var(--ease-standard),
+        border-color 200ms var(--ease-standard), box-shadow 200ms var(--ease-standard),
+        color 200ms var(--ease-standard), opacity 200ms var(--ease-standard);
+}
+
+/* Respuesta al toque: la retroalimentación debe sentirse en el
+   instante de presionar, no al soltar — igual que un botón de
+   iOS/macOS que se atenúa y encoge levemente bajo el dedo. */
+button:active:not(:disabled), a:active {
+    transform: scale(0.97);
+    transition-duration: 90ms;
+}
+button:disabled { transform: none; }
+
+/* Foco de teclado: anillo de acento suave con halo, no el contorno
+   azul plano del navegador — coherente con el "focus ring" de
+   macOS Sequoia. */
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--accent-ring);
+}
+.dark button:focus-visible, .dark a:focus-visible, .dark input:focus-visible,
+.dark select:focus-visible, .dark textarea:focus-visible {
+    box-shadow: 0 0 0 4px var(--accent-ring-dark);
+}
+
+/* ------------------------------------------------------------
+   Botones: variantes "filled" (acción primaria) y "tinted"
+   (acción secundaria sobre fondo de color pálido), como en
+   UIButton.Configuration de Apple — pastilla redondeada, sin
+   bordes duros, con sombra de contacto sutil solo en la variante
+   principal.
+   ------------------------------------------------------------ */
+button.rounded-xl, button.rounded-lg, button.rounded-full {
+    font-weight: 600;
+}
+button[class*="bg-brand-600"] {
+    box-shadow: var(--shadow-btn-light);
+}
+.dark button[class*="bg-brand-600"] {
+    box-shadow: var(--shadow-btn-dark);
+}
+button[class*="bg-emerald-600"] {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 10px -4px rgba(52, 199, 89, 0.35);
+}
+.dark button[class*="bg-emerald-600"] {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px -4px rgba(48, 209, 88, 0.4);
+}
+button:disabled { box-shadow: none !important; }
+
+/* Logotipo del encabezado: gradiente diagonal en vez de un naranja
+   plano, como el icono de una app de Apple (Salud, Recordatorios…),
+   para que sea lo primero con "vida" que se ve al abrir la página. */
+header .rounded-xl.bg-brand-600 {
+    background: linear-gradient(135deg, #FFB340 0%, #FF9500 45%, #FF6A00 100%);
+}
+.dark header .rounded-xl.bg-brand-600 {
+    background: linear-gradient(135deg, #FFC166 0%, #FF9F0A 45%, #E6720A 100%);
+}
+
+/* Botones "tinted" (fondo pálido + texto del mismo tono, ej. los
+   accesos rápidos del encabezado y la exportación): un highlight
+   interior de 1px al reposo simula el material translúcido de un
+   chip de Apple, no solo un color plano. */
+button[class*="bg-brand-50"], button[class*="bg-amber-50"], button[class*="bg-emerald-50"],
+button[class*="bg-blue-50"] {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+.dark button[class*="dark:bg-brand-950"], .dark button[class*="dark:bg-amber-950"],
+.dark button[class*="dark:bg-emerald-950"] {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* ------------------------------------------------------------
+   Materiales: tarjetas con sombra suave y estratificada en vez de
+   una sombra plana única, más un realce interior de 1px que imita
+   el borde de cristal de una tarjeta translúcida de Apple.
+   ------------------------------------------------------------ */
+.rounded-2xl.border, .rounded-3xl.border {
+    box-shadow: var(--shadow-card-light), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.dark .rounded-2xl.border, .dark .rounded-3xl.border {
+    box-shadow: var(--shadow-card-dark), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+/* La tarjeta destacada (identificación del participante, borde de
+   2px en el acento) recibe además una elevación mayor, como el
+   "hero card" de una pantalla de Apple. */
+.border-2.border-brand-300, .dark .border-2.border-brand-800 {
+    box-shadow: var(--shadow-raised-light), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.dark .border-2.border-brand-800 {
+    box-shadow: var(--shadow-raised-dark), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Resplandor de color a juego en las tarjetas de resultado de riesgo
+   (bajo/moderado/alto): además de la sombra de contacto neutra, una
+   segunda sombra difusa tomada del color semántico de la tarjeta —
+   como las tarjetas destacadas de la App Store o Wallet, cuya sombra
+   siempre lleva el tinte de su propio color en vez de ser gris. */
+.rounded-2xl.border[class*="border-emerald-500/20"] {
+    box-shadow: var(--shadow-card-light), inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 28px -16px rgba(52, 199, 89, 0.45);
+}
+.dark .rounded-2xl.border[class*="border-emerald-500/20"] {
+    box-shadow: var(--shadow-card-dark), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 14px 30px -16px rgba(48, 209, 88, 0.4);
+}
+.rounded-2xl.border[class*="border-amber-500/20"] {
+    box-shadow: var(--shadow-card-light), inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 28px -16px rgba(255, 204, 0, 0.4);
+}
+.dark .rounded-2xl.border[class*="border-amber-500/20"] {
+    box-shadow: var(--shadow-card-dark), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 14px 30px -16px rgba(255, 214, 10, 0.35);
+}
+.rounded-2xl.border[class*="border-rose-500/20"] {
+    box-shadow: var(--shadow-card-light), inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 28px -16px rgba(255, 59, 48, 0.45);
+}
+.dark .rounded-2xl.border[class*="border-rose-500/20"] {
+    box-shadow: var(--shadow-card-dark), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 14px 30px -16px rgba(255, 69, 58, 0.4);
+}
+
+/* Encabezado superior traslúcido: el contenido se desliza por
+   debajo como una capa de vidrio esmerilado, y un degradado sutil
+   en el borde marca el límite en vez de una línea dura. */
+.glass-header {
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--separator-light);
+}
+.dark .glass-header {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid var(--separator-dark);
+}
+
+/* Pie de página: el mismo material de "grouped background" que el
+   cuerpo, separado por una línea de sistema en vez de un bloque de
+   color con borde grueso. */
+footer.bg-slate-100 {
+    border-top-color: var(--separator-light) !important;
+}
+.dark footer.dark\:bg-slate-950 {
+    border-top-color: var(--separator-dark) !important;
+}
+
+/* El aviso metodológico y demás "callouts" tintados de color pleno
+   llevan el mismo realce de vidrio que las tarjetas. */
+.bg-blue-50.border, .dark .bg-blue-950\/20.border {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ------------------------------------------------------------
+   Campos de formulario: fondo "System Gray 6" con foco por halo de
+   acento en vez de un anillo azul genérico — igual que un
+   UITextField de iOS.
+   ------------------------------------------------------------ */
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    -webkit-appearance: none;
+    appearance: none;
+}
+input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus,
+select:focus, textarea:focus {
+    background-color: #ffffff;
+    border-color: var(--accent) !important;
+}
+.dark input[type="text"]:focus, .dark input[type="number"]:focus, .dark input[type="date"]:focus,
+.dark select:focus, .dark textarea:focus {
+    background-color: #0b0b0c;
+    border-color: var(--accent-dark) !important;
+}
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%238E8E93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 13px;
+    padding-right: 2rem !important;
+}
+
+/* ------------------------------------------------------------
+   Casillas de verificación
+   ------------------------------------------------------------
+   Dos variantes, diferenciadas por el tamaño de texto de su
+   etiqueta (ya presente en el marcado, sin tocar app.js):
+   - Interruptores tipo UISwitch para las decisiones principales
+     (fuma, alcohol, IBP, toma creatina, toma proteína en polvo).
+   - Casilla mínima con marca de verificación para las notas de
+     procedencia del dato ("genérico"/"verificado con etiqueta"),
+     que van junto a texto de 9px y no deben competir con él.
+*/
+input[type="checkbox"].accent-brand-600 {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    vertical-align: middle;
+}
+
+/* Interruptor principal (dentro de una etiqueta text-xs) — mismas
+   proporciones 51×31pt (a escala) que un UISwitch real. */
+.text-xs input[type="checkbox"].accent-brand-600 {
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    background-color: var(--track-off);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+    transition: background-color 220ms var(--ease-spring);
+}
+.dark .text-xs input[type="checkbox"].accent-brand-600 {
+    background-color: var(--track-off-dark);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.text-xs input[type="checkbox"].accent-brand-600::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.16);
+    transition: transform 220ms var(--ease-spring);
+}
+.text-xs input[type="checkbox"].accent-brand-600:checked {
+    background-color: var(--accent);
+}
+.dark .text-xs input[type="checkbox"].accent-brand-600:checked {
+    background-color: var(--accent-dark);
+}
+.text-xs input[type="checkbox"].accent-brand-600:checked::after {
+    transform: translateX(14px);
+}
+.text-xs input[type="checkbox"].accent-brand-600:active::after {
+    width: 18px; /* se "achata" levemente al presionar, como el interruptor real de iOS */
+}
+
+/* Casilla secundaria de procedencia del dato (dentro de una etiqueta
+   text-[9px]) — se define después para ganar el empate de
+   especificidad si alguna vez quedara anidada dentro de un
+   contenedor text-xs. */
+.text-\[9px\] input[type="checkbox"].accent-brand-600 {
+    width: 13px;
+    height: 13px;
+    border-radius: 4px;
+    border: 1.5px solid #C7C7CC;
+    background-color: #ffffff;
+    transition: background-color 160ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+.dark .text-\[9px\] input[type="checkbox"].accent-brand-600 {
+    border-color: #48484A;
+    background-color: #0b0b0c;
+}
+.text-\[9px\] input[type="checkbox"].accent-brand-600:checked {
+    background-color: var(--system-blue);
+    border-color: var(--system-blue);
+}
+.dark .text-\[9px\] input[type="checkbox"].accent-brand-600:checked {
+    background-color: var(--system-blue-dark);
+    border-color: var(--system-blue-dark);
+}
+.text-\[9px\] input[type="checkbox"].accent-brand-600:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: -0.5px;
+    width: 4px;
+    height: 7px;
+    border: solid #ffffff;
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+}
+
+/* ------------------------------------------------------------
+   Segmentado (selector de organismo de referencia IOM/EFSA/EPIC):
+   la variante activa recibe la misma sombra "btn" que el resto de
+   botones primarios, como el segmento seleccionado de un
+   UISegmentedControl.
+   ------------------------------------------------------------ */
+button[class*="bg-brand-600"][class*="border-brand-600"] {
+    box-shadow: var(--shadow-btn-light);
+}
+.dark button[class*="bg-brand-600"][class*="border-brand-600"] {
+    box-shadow: var(--shadow-btn-dark);
+}
+
+/* Barras de progreso: extremos redondeados ya vienen de Tailwind;
+   se añade una veta interior sutil para que no se vean como un
+   bloque de color plano. */
+.h-2.rounded-full.overflow-hidden {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.dark .h-2.rounded-full.overflow-hidden {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ------------------------------------------------------------
+   Aparición de paneles condicionales ("materializar" en vez de
+   simplemente aparecer de golpe): al desplegarse el detalle de un
+   suplemento u opción, entra con una leve traslación + fundido que
+   apunta hacia su posición final.
+   ------------------------------------------------------------ */
+@keyframes apple-reveal {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.apple-reveal {
+    animation: apple-reveal 260ms var(--ease-spring) both;
+}
+
+/* ------------------------------------------------------------
+   Accesibilidad de movimiento y transparencia: no se elimina la
+   retroalimentación, se ofrece una versión más suave.
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 120ms !important;
+    }
+    button:active:not(:disabled), a:active { transform: none; }
+    .text-xs input[type="checkbox"].accent-brand-600::after { transition: none; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .glass-header {
+        background-color: #ffffff;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .dark .glass-header {
+        background-color: #000000;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .rounded-2xl.border, .rounded-3xl.border { border-width: 1.5px; box-shadow: none; }
+    .text-\[9px\] input[type="checkbox"].accent-brand-600 { border-width: 2px; }
+    :root { --track-off: #8E8E93; }
+    .dark { --track-off-dark: #AEAEB2; }
+}
+
+/* ------------------------------------------------------------
+   Resto del comportamiento existente
+   ------------------------------------------------------------ */
+
+/* La hoja del participante permanece oculta en pantalla y solo aparece
+   al imprimir en su modo dedicado. */
+.hoja-participante {
+    display: none;
+}
+
+@media print {
+    .no-print { display: none !important; }
+    .print-only { display: block !important; }
+
+    body {
+        background-color: white !important;
+        color: black !important;
+    }
+
+    /* Modo hoja del participante: se imprime SOLO la hoja de una página,
+       ocultando el informe técnico completo. */
+    body.modo-hoja-participante .print-only { display: none !important; }
+    body.modo-hoja-participante main > div:not(.hoja-participante) { display: none !important; }
+    body.modo-hoja-participante .hoja-participante {
+        display: block !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    @page { margin: 1.5cm; }
+}
+
+/* ============================================================
+   Recorrido vertical (v6.0)
+   ------------------------------------------------------------
+   La v3.1 usaba dos columnas: entradas a la izquierda, resultados a la
+   derecha. Ahora el recorrido es vertical, en seis pasos, con los
+   resultados al final. Estos estilos son los que ese cambio necesita y
+   que Tailwind no da hechos.
+   ============================================================ */
+
+/* Los anclajes de #cuestionario y #resultados tienen que dejar libre el
+   encabezado fijo (4rem) y la franja de resumen (≈3.5rem); si no, el
+   destino del salto queda debajo de ellos. */
+#cuestionario,
+#resultados {
+    scroll-margin-top: 7.5rem;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Quien haya pedido menos animación en su sistema no debe recibir un
+   desplazamiento animado: es una preferencia de accesibilidad, no un
+   gusto estético. */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}
+
+/* Franja de resumen: se apoya sobre el contenido que pasa por debajo, así
+   que necesita separarse de él con algo más que el fondo translúcido. */
+.resumen-fijo {
+    box-shadow: 0 4px 16px -6px rgba(15, 23, 42, 0.18);
+}
+
+.dark .resumen-fijo {
+    box-shadow: 0 4px 16px -6px rgba(0, 0, 0, 0.55);
+}
+
+/* Cabecera de paso: la línea vertical conecta visualmente el número con
+   las tarjetas que dependen de él, de modo que se vea dónde acaba un paso
+   y empieza el siguiente sin necesidad de recuadros anidados. */
+.paso-cabecera {
+    position: relative;
+}
+
+.paso-cabecera::after {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 2.5rem;
+    bottom: -1.5rem;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(148, 163, 184, 0.35), transparent);
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    .paso-cabecera::after { display: none; }
+}
+
+/* Al imprimir no tiene sentido ninguno de los dos: la franja fija se
+   duplicaría en cada página y la línea de paso no aporta nada en papel. */
+@media print {
+    .resumen-fijo { display: none !important; }
+    .paso-cabecera::after { display: none; }
+    #cuestionario, #resultados { scroll-margin-top: 0; }
+}
